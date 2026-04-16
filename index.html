@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Robofestival Tournament</title>
+    <link rel="icon" type="image/jpeg" href="./favicon.jpg" />
+    <link rel="apple-touch-icon" href="./favicon.jpg" />
+    <script>
+      (function () {
+        try {
+          var k = "tournamentTheme";
+          var s = localStorage.getItem(k);
+          var t =
+            s === "light" || s === "dark"
+              ? s
+              : window.matchMedia("(prefers-color-scheme: light)").matches
+                ? "light"
+                : "dark";
+          document.documentElement.setAttribute("data-theme", t);
+          document.documentElement.style.colorScheme = t === "light" ? "light" : "dark";
+        } catch (e) {
+          document.documentElement.setAttribute("data-theme", "dark");
+        }
+      })();
+    </script>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="appHeader">
+      <div class="appHeader__title">
+        <h1>Robofestival Tournament</h1>
+        <p class="muted">Teams • Levels • Leaderboard</p>
+      </div>
+      <div class="appHeader__actions row row--gap">
+        <button id="langToggleBtn" class="btn btn--ghost" type="button" aria-label="Switch language">
+          EN / EL
+        </button>
+        <div class="themeToggle" title="Light or dark appearance">
+          <span class="themeToggle__label themeToggle__label--dark">Dark</span>
+          <button
+            id="themeToggleBtn"
+            class="themeToggle__switch"
+            type="button"
+            role="switch"
+            aria-checked="false"
+            aria-label="Theme: use switch to choose light or dark"
+          >
+            <span class="themeToggle__knob" aria-hidden="true"></span>
+          </button>
+          <span class="themeToggle__label themeToggle__label--light">Light</span>
+        </div>
+        <button
+          id="exportExcelBtn"
+          class="btn btn--ghost"
+          type="button"
+          disabled
+          title="Enable after you end the tournament"
+        >
+          Export Excel
+        </button>
+        <button id="resetBtn" class="btn btn--danger" type="button">Reset tournament</button>
+      </div>
+    </header>
+
+    <main class="container">
+      <nav class="tabs" role="tablist" aria-label="Tournament views">
+        <button id="tab-roster" class="tab tab--active" type="button" role="tab" aria-selected="true" aria-controls="panel-roster" tabindex="0">
+          Participants + teams
+        </button>
+        <button id="tab-levels" class="tab" type="button" role="tab" aria-selected="false" aria-controls="panel-levels" tabindex="-1">
+          Levels + scoring
+        </button>
+        <button id="tab-leaderboard" class="tab" type="button" role="tab" aria-selected="false" aria-controls="panel-leaderboard" tabindex="-1">
+          Leaderboard
+        </button>
+      </nav>
+
+      <div id="panel-roster" class="tabPanel tabPanel--roster" role="tabpanel" aria-labelledby="tab-roster">
+        <section class="card card--collapsible" id="card-participants">
+          <div class="card__header">
+            <div class="card__titleRow">
+              <h2 id="participantsTitle">Participants</h2>
+              <button id="collapseParticipantsBtn" class="card__collapseBtn" type="button" aria-expanded="true" aria-controls="card-participants-body">
+                Collapse
+              </button>
+            </div>
+            <p class="muted">Add names, or paste one per line.</p>
+          </div>
+
+          <div id="card-participants-body" class="card__body">
+            <div class="grid grid--2">
+              <div>
+                <form id="addParticipantForm" class="row">
+                  <input id="participantNameInput" class="input" type="text" placeholder="Participant name" autocomplete="off" />
+                  <button class="btn" type="submit">Add</button>
+                </form>
+                <div id="participantsList" class="list" aria-live="polite"></div>
+              </div>
+
+              <div>
+                <label class="label" for="bulkParticipantsInput">Bulk paste</label>
+                <textarea id="bulkParticipantsInput" class="textarea" rows="8" placeholder="One name per line"></textarea>
+                <div class="row row--space">
+                  <button id="bulkAddBtn" class="btn" type="button">Add lines</button>
+                  <button id="clearParticipantsBtn" class="btn btn--ghost" type="button">Clear participants</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card card--collapsible" id="card-teams">
+          <div class="card__header">
+            <div class="card__titleRow">
+              <h2 id="teamsTitle">Teams</h2>
+              <button id="collapseTeamsBtn" class="card__collapseBtn" type="button" aria-expanded="true" aria-controls="card-teams-body">
+                Collapse
+              </button>
+            </div>
+            <p class="muted">Create teams randomly, add empty teams, then drag players between teams and the unassigned bench.</p>
+          </div>
+
+          <div id="card-teams-body" class="card__body">
+            <div class="row row--wrap row--gap">
+              <label class="labelInline">
+                <span class="labelInline__text">Number of teams</span>
+                <input id="teamCountInput" class="input input--small" type="number" min="2" step="1" value="4" />
+              </label>
+              <button id="createTeamsBtn" class="btn" type="button">Create randomly</button>
+              <button id="createEmptyTeamsBtn" class="btn btn--ghost" type="button">Create empty teams</button>
+              <button id="reshuffleTeamsBtn" class="btn btn--ghost" type="button">Re-shuffle</button>
+              <button id="addEmptyTeamBtn" class="btn btn--ghost" type="button">Add empty team</button>
+              <span id="teamLockHint" class="muted"></span>
+            </div>
+
+            <div id="teamsArea" class="teamsArea" aria-live="polite"></div>
+          </div>
+        </section>
+      </div>
+
+      <div id="panel-levels" class="tabPanel" role="tabpanel" aria-labelledby="tab-levels" hidden>
+        <section class="card" aria-labelledby="levelsTitle">
+          <div class="card__header">
+            <h2 id="levelsTitle">Levels + scoring</h2>
+            <p class="muted">All teams play each level. Enter scores for every match to complete a level.</p>
+          </div>
+
+          <div class="row row--wrap row--gap">
+            <button id="createLevelBtn" class="btn" type="button">Create next level</button>
+            <button id="endTournamentBtn" class="btn btn--ghost" type="button">End tournament</button>
+            <button id="resumeTournamentBtn" class="btn btn--ghost" type="button">Resume / add levels</button>
+            <span id="levelStatus" class="muted"></span>
+          </div>
+
+          <div id="levelsArea" class="levels" aria-live="polite"></div>
+        </section>
+      </div>
+
+      <div id="panel-leaderboard" class="tabPanel" role="tabpanel" aria-labelledby="tab-leaderboard" hidden>
+        <section class="card" aria-labelledby="leaderboardTitle">
+          <div class="card__header">
+            <h2 id="leaderboardTitle">Leaderboard</h2>
+            <p class="muted">Total points = sum of all level scores.</p>
+          </div>
+
+          <div id="leaderboardArea" aria-live="polite"></div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="footer muted">
+      <small>Saved locally in this browser (localStorage).</small>
+    </footer>
+
+    <button type="button" id="backToTopBtn" class="backToTop" aria-label="Back to top" title="Back to top" hidden>
+      Top
+    </button>
+
+    <script defer src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    <script defer src="./storage.js"></script>
+    <script defer src="./app.js"></script>
+  </body>
+</html>
