@@ -1131,8 +1131,8 @@ function renderTeams() {
 
   const teamsGridHtml = state.teams.length
     ? state.teams
-    .map((t) => {
-      const members = (t.memberIds ?? [])
+    .map((team) => {
+      const members = (team.memberIds ?? [])
         .map((pid) => participantById(pid))
         .filter(Boolean);
       const membersHtml = members.length
@@ -1140,14 +1140,14 @@ function renderTeams() {
             .map((p) => {
               const moveDisabled = state.membershipLocked ? "disabled" : "";
               return `
-                <div class="memberRow" ${moveDisabled ? "" : 'draggable="true"'} data-action="draggableMember" data-from="${t.id}" data-pid="${p.id}">
+                <div class="memberRow" ${moveDisabled ? "" : 'draggable="true"'} data-action="draggableMember" data-from="${team.id}" data-pid="${p.id}">
                   <div class="memberRow__name">${escapeHtml(participantDisplayName(p))}</div>
                   <div class="moveRow">
-                    <select class="input input--small" ${moveDisabled} data-action="moveTo" data-from="${t.id}" data-pid="${p.id}">
-                      ${teamSelectOptionsForRow(t.id)}
+                    <select class="input input--small" ${moveDisabled} data-action="moveTo" data-from="${team.id}" data-pid="${p.id}">
+                      ${teamSelectOptionsForRow(team.id)}
                     </select>
-                    <button class="miniBtn" type="button" ${moveDisabled} data-action="moveBtn" data-from="${t.id}" data-pid="${p.id}">${t("move")}</button>
-                    <button class="miniBtn" type="button" ${moveDisabled} data-action="removeFromTeam" data-from="${t.id}" data-pid="${p.id}">${t("remove")}</button>
+                    <button class="miniBtn" type="button" ${moveDisabled} data-action="moveBtn" data-from="${team.id}" data-pid="${p.id}">${t("move")}</button>
+                    <button class="miniBtn" type="button" ${moveDisabled} data-action="removeFromTeam" data-from="${team.id}" data-pid="${p.id}">${t("remove")}</button>
                   </div>
                 </div>
               `;
@@ -1156,9 +1156,9 @@ function renderTeams() {
         : `<div class="muted">${t("noMembers")}</div>`;
 
       return `
-        <div class="teamCard" data-action="dropTeam" data-team-id="${t.id}">
+        <div class="teamCard" data-action="dropTeam" data-team-id="${team.id}">
           <div class="teamCard__head">
-            <input class="input teamNameInput" value="${escapeAttr(teamDisplayName(t))}" data-action="teamName" data-id="${t.id}" />
+            <input class="input teamNameInput" value="${escapeAttr(teamDisplayName(team))}" data-action="teamName" data-id="${team.id}" />
           </div>
           <div class="members">${membersHtml}</div>
         </div>
@@ -1363,13 +1363,13 @@ function renderLeaderboardOnly() {
       </thead>
       <tbody>
         ${rows
-          .map((t, i) => {
+          .map((teamRow, i) => {
             return `
               <tr>
                 <td>${i + 1}</td>
-                <td>${escapeHtml(teamDisplayName(t))}</td>
-                <td><strong>${totals[t.id] ?? 0}</strong></td>
-                <td>${matchesPlayed[t.id] ?? 0}</td>
+                <td>${escapeHtml(teamDisplayName(teamRow))}</td>
+                <td><strong>${totals[teamRow.id] ?? 0}</strong></td>
+                <td>${matchesPlayed[teamRow.id] ?? 0}</td>
               </tr>
             `;
           })
