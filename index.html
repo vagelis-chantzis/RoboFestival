@@ -80,7 +80,9 @@
         <section class="card card--collapsible" id="card-participants">
           <div class="card__header">
             <div class="card__titleRow">
-              <h2 id="participantsTitle">Participants</h2>
+              <h2 id="participantsTitle">
+                Participants <span id="participantsCountBadge" class="countBadge">0</span>
+              </h2>
               <button id="collapseParticipantsBtn" class="card__collapseBtn" type="button" aria-expanded="true" aria-controls="card-participants-body">
                 Collapse
               </button>
@@ -89,6 +91,10 @@
           </div>
 
           <div id="card-participants-body" class="card__body">
+            <div class="row row--wrap row--gap">
+              <button id="toggleParticipantsLockBtn" class="btn btn--ghost" type="button">Lock participants</button>
+              <span id="participantsLockHint" class="muted"></span>
+            </div>
             <div class="grid grid--2">
               <div>
                 <form id="addParticipantForm" class="row">
@@ -131,6 +137,7 @@
               <button id="createEmptyTeamsBtn" class="btn btn--ghost" type="button">Create empty teams</button>
               <button id="reshuffleTeamsBtn" class="btn btn--ghost" type="button">Re-shuffle</button>
               <button id="addEmptyTeamBtn" class="btn btn--ghost" type="button">Add empty team</button>
+              <button id="toggleTeamsLockBtn" class="btn btn--ghost" type="button">Lock teams</button>
               <span id="teamLockHint" class="muted"></span>
             </div>
 

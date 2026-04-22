@@ -32,6 +32,11 @@ const I18N = {
     oneNamePerLine: "One name per line",
     addLines: "Add lines",
     clearParticipants: "Clear participants",
+    lockParticipants: "Lock participants",
+    unlockParticipants: "Unlock participants",
+    participantsLockedHint: "Participant editing is locked.",
+    participantsUnlockedHint: "You can add or remove participants.",
+    participantsAutoLockedHint: "Participants are locked after first level starts.",
     teams: "Teams",
     teamsHelp: "Create teams randomly, add empty teams, then drag players between teams and the unassigned bench.",
     numberOfTeams: "Number of teams",
@@ -39,6 +44,13 @@ const I18N = {
     createEmptyTeams: "Create empty teams",
     reshuffle: "Re-shuffle",
     addEmptyTeam: "Add empty team",
+    lockTeams: "Lock teams",
+    unlockTeams: "Unlock teams",
+    teamsLockedHint: "Team editing is locked.",
+    teamsUnlockedHint: "You can edit teams and move players.",
+    teamsAutoLockedHint: "Teams are locked after first level starts.",
+    collapseTeam: "Collapse team",
+    expandTeam: "Expand team",
     levelsScoring: "Levels + scoring",
     levelsHelp: "All teams play each level. Enter scores for every match to complete a level.",
     createNextLevel: "Create next level",
@@ -80,6 +92,7 @@ const I18N = {
     themeAriaDarkOn: "Dark theme on. Click to use light theme.",
     resetConfirm: "Reset tournament? This clears saved data in this browser.",
     clearParticipantsConfirm: "Clear all participants and teams?",
+    participantsLockedActionBlocked: "Participants are locked.",
     noParticipantsYet: "No participants yet.",
     inATeam: "in a team",
     notAssigned: "not assigned",
@@ -133,6 +146,11 @@ const I18N = {
     oneNamePerLine: "Ένα όνομα ανά γραμμή",
     addLines: "Προσθήκη γραμμών",
     clearParticipants: "Εκκαθάριση συμμετεχόντων",
+    lockParticipants: "Κλείδωμα συμμετεχόντων",
+    unlockParticipants: "Ξεκλείδωμα συμμετεχόντων",
+    participantsLockedHint: "Η επεξεργασία συμμετεχόντων είναι κλειδωμένη.",
+    participantsUnlockedHint: "Μπορείτε να προσθέσετε ή να αφαιρέσετε συμμετέχοντες.",
+    participantsAutoLockedHint: "Οι συμμετέχοντες κλειδώνουν μετά την έναρξη του πρώτου επιπέδου.",
     teams: "Ομάδες",
     teamsHelp: "Δημιουργήστε ομάδες τυχαία, προσθέστε κενές ομάδες και μετά σύρετε παίκτες ανάμεσα στις ομάδες και στον πάγκο.",
     numberOfTeams: "Αριθμός ομάδων",
@@ -140,6 +158,13 @@ const I18N = {
     createEmptyTeams: "Δημιουργία κενών ομάδων",
     reshuffle: "Ανακάτεμα",
     addEmptyTeam: "Προσθήκη κενής ομάδας",
+    lockTeams: "Κλείδωμα ομάδων",
+    unlockTeams: "Ξεκλείδωμα ομάδων",
+    teamsLockedHint: "Η επεξεργασία ομάδων είναι κλειδωμένη.",
+    teamsUnlockedHint: "Μπορείτε να επεξεργαστείτε ομάδες και να μετακινήσετε παίκτες.",
+    teamsAutoLockedHint: "Οι ομάδες κλειδώνουν μετά την έναρξη του πρώτου επιπέδου.",
+    collapseTeam: "Σύμπτυξη ομάδας",
+    expandTeam: "Ανάπτυξη ομάδας",
     levelsScoring: "Επίπεδα + βαθμολογία",
     levelsHelp: "Όλες οι ομάδες παίζουν σε κάθε επίπεδο. Συμπληρώστε σκορ σε κάθε αγώνα για να ολοκληρωθεί το επίπεδο.",
     createNextLevel: "Δημιουργία επόμενου επιπέδου",
@@ -181,6 +206,7 @@ const I18N = {
     themeAriaDarkOn: "Το σκούρο θέμα είναι ενεργό. Πατήστε για φωτεινό.",
     resetConfirm: "Επαναφορά τουρνουά; Αυτό θα διαγράψει τα αποθηκευμένα δεδομένα σε αυτόν τον browser.",
     clearParticipantsConfirm: "Να διαγραφούν όλοι οι συμμετέχοντες και οι ομάδες;",
+    participantsLockedActionBlocked: "Οι συμμετέχοντες είναι κλειδωμένοι.",
     noParticipantsYet: "Δεν υπάρχουν συμμετέχοντες ακόμα.",
     inATeam: "σε ομάδα",
     notAssigned: "δεν έχει ανατεθεί",
@@ -276,6 +302,7 @@ function defaultState() {
     rounds: [],
     tournamentEnded: false,
     membershipLocked: false,
+    participantsLocked: false,
     lastTeamCount: 4,
   };
 }
@@ -291,12 +318,18 @@ function migrateLoadedState(loaded) {
     rounds: Array.isArray(loaded.rounds) ? loaded.rounds : [],
     tournamentEnded: Boolean(loaded.tournamentEnded),
     membershipLocked: Boolean(loaded.membershipLocked),
+    participantsLocked: Boolean(loaded.participantsLocked),
     lastTeamCount: Number.isFinite(loaded.lastTeamCount) ? loaded.lastTeamCount : base.lastTeamCount,
   };
 }
 
 let state = migrateLoadedState(loadState());
 let draggedMember = null;
+const collapsedTeamIds = new Set();
+if (state.rounds.length > 0) {
+  state.membershipLocked = true;
+  state.participantsLocked = true;
+}
 
 function persist() {
   saveState(state);
@@ -498,6 +531,40 @@ function lockMembershipIfNeeded() {
   }
 }
 
+function toggleTeamsLock() {
+  if (hasRounds()) {
+    state.membershipLocked = true;
+    persist();
+    renderControlsOnly();
+    return;
+  }
+  state.membershipLocked = !state.membershipLocked;
+  persist();
+  render();
+}
+
+function lockParticipantsIfNeeded() {
+  if (!state.participantsLocked && hasRounds()) {
+    state.participantsLocked = true;
+  }
+}
+
+function canEditParticipants() {
+  return !state.participantsLocked;
+}
+
+function toggleParticipantsLock() {
+  if (hasRounds()) {
+    state.participantsLocked = true;
+    persist();
+    renderControlsOnly();
+    return;
+  }
+  state.participantsLocked = !state.participantsLocked;
+  persist();
+  render();
+}
+
 function addEmptyTeam() {
   if (state.membershipLocked) return;
   const n = state.teams.length + 1;
@@ -604,6 +671,7 @@ function removeParticipantFromTeam(participantId, teamId) {
 }
 
 function addParticipant(name) {
+  if (!canEditParticipants()) return;
   const cleaned = normalizeName(name);
   if (!cleaned) return;
   state.participants.push({ id: uid("p"), name: cleaned });
@@ -612,6 +680,7 @@ function addParticipant(name) {
 }
 
 function removeParticipant(participantId) {
+  if (!canEditParticipants()) return;
   state.participants = state.participants.filter((p) => p.id !== participantId);
   for (const t of state.teams) {
     t.memberIds = (t.memberIds ?? []).filter((id) => id !== participantId);
@@ -621,6 +690,7 @@ function removeParticipant(participantId) {
 }
 
 function clearParticipants() {
+  if (!canEditParticipants()) return;
   state.participants = [];
   state.teams = [];
   state.rounds = [];
@@ -657,6 +727,7 @@ function createNextRound() {
   };
   state.rounds.push(round);
   lockMembershipIfNeeded();
+  lockParticipantsIfNeeded();
   persist();
   render();
 }
@@ -911,7 +982,9 @@ function applyStaticTranslations() {
   if (tabLeaderboard) tabLeaderboard.textContent = t("tabLeaderboard");
 
   const participantsTitle = document.getElementById("participantsTitle");
-  if (participantsTitle) participantsTitle.textContent = t("participants");
+  if (participantsTitle) {
+    participantsTitle.innerHTML = `${escapeHtml(t("participants"))} <span id="participantsCountBadge" class="countBadge">${state.participants.length}</span>`;
+  }
   const participantsHeaderHelp = document.querySelector("#card-participants .card__header .muted");
   if (participantsHeaderHelp) participantsHeaderHelp.textContent = t("participantsHelp");
   if (els.participantNameInput) els.participantNameInput.placeholder = t("participantName");
@@ -933,6 +1006,7 @@ function applyStaticTranslations() {
   if (els.createEmptyTeamsBtn) els.createEmptyTeamsBtn.textContent = t("createEmptyTeams");
   if (els.reshuffleTeamsBtn) els.reshuffleTeamsBtn.textContent = t("reshuffle");
   if (els.addEmptyTeamBtn) els.addEmptyTeamBtn.textContent = t("addEmptyTeam");
+  if (els.toggleTeamsLockBtn) els.toggleTeamsLockBtn.textContent = state.membershipLocked ? t("unlockTeams") : t("lockTeams");
 
   const levelsTitle = document.getElementById("levelsTitle");
   if (levelsTitle) levelsTitle.textContent = t("levelsScoring");
@@ -988,12 +1062,15 @@ const els = {
   bulkParticipantsInput: document.getElementById("bulkParticipantsInput"),
   bulkAddBtn: document.getElementById("bulkAddBtn"),
   clearParticipantsBtn: document.getElementById("clearParticipantsBtn"),
+  toggleParticipantsLockBtn: document.getElementById("toggleParticipantsLockBtn"),
+  participantsLockHint: document.getElementById("participantsLockHint"),
 
   teamCountInput: document.getElementById("teamCountInput"),
   createTeamsBtn: document.getElementById("createTeamsBtn"),
   createEmptyTeamsBtn: document.getElementById("createEmptyTeamsBtn"),
   reshuffleTeamsBtn: document.getElementById("reshuffleTeamsBtn"),
   addEmptyTeamBtn: document.getElementById("addEmptyTeamBtn"),
+  toggleTeamsLockBtn: document.getElementById("toggleTeamsLockBtn"),
   teamLockHint: document.getElementById("teamLockHint"),
   teamsArea: document.getElementById("teamsArea"),
 
@@ -1030,12 +1107,20 @@ function wireEvents() {
 
   els.addParticipantForm.addEventListener("submit", (e) => {
     e.preventDefault();
+    if (!canEditParticipants()) {
+      window.alert(t("participantsLockedActionBlocked"));
+      return;
+    }
     addParticipant(els.participantNameInput.value);
     els.participantNameInput.value = "";
     els.participantNameInput.focus();
   });
 
   els.bulkAddBtn.addEventListener("click", () => {
+    if (!canEditParticipants()) {
+      window.alert(t("participantsLockedActionBlocked"));
+      return;
+    }
     const lines = String(els.bulkParticipantsInput.value ?? "")
       .split("\n")
       .map((l) => normalizeName(l))
@@ -1046,16 +1131,22 @@ function wireEvents() {
   });
 
   els.clearParticipantsBtn.addEventListener("click", () => {
+    if (!canEditParticipants()) {
+      window.alert(t("participantsLockedActionBlocked"));
+      return;
+    }
     const ok = window.confirm(t("clearParticipantsConfirm"));
     if (!ok) return;
     clearParticipants();
   });
+  els.toggleParticipantsLockBtn?.addEventListener("click", () => toggleParticipantsLock());
 
   els.teamCountInput.value = String(state.lastTeamCount ?? 4);
   els.createTeamsBtn.addEventListener("click", () => createTeamsRandom(els.teamCountInput.value));
   els.createEmptyTeamsBtn.addEventListener("click", () => createEmptyTeamsFromCount(els.teamCountInput.value));
   els.reshuffleTeamsBtn.addEventListener("click", () => createTeamsRandom(els.teamCountInput.value));
   els.addEmptyTeamBtn.addEventListener("click", () => addEmptyTeam());
+  els.toggleTeamsLockBtn?.addEventListener("click", () => toggleTeamsLock());
 
   els.createLevelBtn.addEventListener("click", () => createNextRound());
   els.endTournamentBtn.addEventListener("click", () => setTournamentEnded(true));
@@ -1072,6 +1163,9 @@ function wireEvents() {
 
 function renderParticipants() {
   const list = state.participants;
+  const badge = document.getElementById("participantsCountBadge");
+  if (badge) badge.textContent = String(list.length);
+  const editDisabled = state.participantsLocked ? "disabled" : "";
   if (!list.length) {
     els.participantsList.innerHTML = `<div class="muted">${t("noParticipantsYet")}</div>`;
     return;
@@ -1084,10 +1178,12 @@ function renderParticipants() {
         <div class="pill">
           <div class="pill__main">
             <div class="pill__name">${escapeHtml(participantDisplayName(p))}</div>
-            <div class="pill__meta">${inTeams ? t("inATeam") : t("notAssigned")}</div>
+            <div class="pill__meta ${inTeams ? "pill__meta--assigned" : ""}">
+              ${inTeams ? `<span class="pill__check" aria-hidden="true">✓</span> ` : ""}${inTeams ? t("inATeam") : t("notAssigned")}
+            </div>
           </div>
           <div class="pill__actions">
-            <button class="miniBtn" type="button" data-action="removeParticipant" data-id="${p.id}">${t("remove")}</button>
+            <button class="miniBtn" type="button" ${editDisabled} data-action="removeParticipant" data-id="${p.id}">${t("remove")}</button>
           </div>
         </div>
       `;
@@ -1100,9 +1196,16 @@ function renderParticipants() {
 }
 
 function renderTeams() {
-  els.teamLockHint.textContent = state.membershipLocked
-    ? t("lockHintLocked")
-    : t("lockHintUnlocked");
+  const teamIdSet = new Set(state.teams.map((team) => team.id));
+  for (const collapsedId of [...collapsedTeamIds]) {
+    if (!teamIdSet.has(collapsedId)) collapsedTeamIds.delete(collapsedId);
+  }
+
+  if (hasRounds()) {
+    els.teamLockHint.textContent = t("teamsAutoLockedHint");
+  } else {
+    els.teamLockHint.textContent = state.membershipLocked ? t("teamsLockedHint") : t("teamsUnlockedHint");
+  }
 
   const unassignedIds = getUnassignedParticipantIds();
   const unassignedRows =
@@ -1132,6 +1235,7 @@ function renderTeams() {
   const teamsGridHtml = state.teams.length
     ? state.teams
     .map((team) => {
+      const teamCollapsed = collapsedTeamIds.has(team.id);
       const members = (team.memberIds ?? [])
         .map((pid) => participantById(pid))
         .filter(Boolean);
@@ -1140,9 +1244,9 @@ function renderTeams() {
             .map((p) => {
               const moveDisabled = state.membershipLocked ? "disabled" : "";
               return `
-                <div class="memberRow" ${moveDisabled ? "" : 'draggable="true"'} data-action="draggableMember" data-from="${team.id}" data-pid="${p.id}">
+                <div class="memberRow memberRow--team" ${moveDisabled ? "" : 'draggable="true"'} data-action="draggableMember" data-from="${team.id}" data-pid="${p.id}">
                   <div class="memberRow__name">${escapeHtml(participantDisplayName(p))}</div>
-                  <div class="moveRow">
+                  <div class="moveRow" hidden>
                     <select class="input input--small" ${moveDisabled} data-action="moveTo" data-from="${team.id}" data-pid="${p.id}">
                       ${teamSelectOptionsForRow(team.id)}
                     </select>
@@ -1158,9 +1262,19 @@ function renderTeams() {
       return `
         <div class="teamCard" data-action="dropTeam" data-team-id="${team.id}">
           <div class="teamCard__head">
-            <input class="input teamNameInput" value="${escapeAttr(teamDisplayName(team))}" data-action="teamName" data-id="${team.id}" />
+            <input class="input teamNameInput" ${state.membershipLocked ? "disabled" : ""} value="${escapeAttr(teamDisplayName(team))}" data-action="teamName" data-id="${team.id}" />
+            <button
+              class="teamCollapseBtn"
+              type="button"
+              data-action="toggleTeamCollapse"
+              data-team-id="${team.id}"
+              aria-expanded="${teamCollapsed ? "false" : "true"}"
+              aria-label="${teamCollapsed ? t("expandTeam") : t("collapseTeam")}"
+            >
+              <span class="teamCollapseBtn__chevron ${teamCollapsed ? "teamCollapseBtn__chevron--collapsed" : ""}" aria-hidden="true">▾</span>
+            </button>
           </div>
-          <div class="members">${membersHtml}</div>
+          <div class="members" ${teamCollapsed ? "hidden" : ""}>${membersHtml}</div>
         </div>
       `;
     })
@@ -1183,6 +1297,16 @@ function renderTeams() {
     input.addEventListener("input", () => updateTeamName(input.getAttribute("data-id"), input.value));
   });
 
+  els.teamsArea.querySelectorAll('[data-action="toggleTeamCollapse"]').forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const teamId = btn.getAttribute("data-team-id");
+      if (!teamId) return;
+      if (collapsedTeamIds.has(teamId)) collapsedTeamIds.delete(teamId);
+      else collapsedTeamIds.add(teamId);
+      renderTeams();
+    });
+  });
+
   els.teamsArea.querySelectorAll('[data-action="moveBtn"]').forEach((btn) => {
     btn.addEventListener("click", () => {
       const from = btn.getAttribute("data-from");
@@ -1203,6 +1327,20 @@ function renderTeams() {
       const from = btn.getAttribute("data-from");
       const pid = btn.getAttribute("data-pid");
       removeParticipantFromTeam(pid, from);
+    });
+  });
+
+  els.teamsArea.querySelectorAll(".memberRow--team").forEach((row) => {
+    row.addEventListener("click", (event) => {
+      if (event.target.closest("button,select,input")) return;
+      const moveRow = row.querySelector(".moveRow");
+      if (!moveRow) return;
+      const willOpen = moveRow.hasAttribute("hidden");
+      els.teamsArea.querySelectorAll(".memberRow--team .moveRow").forEach((other) => {
+        other.setAttribute("hidden", "");
+      });
+      if (willOpen) moveRow.removeAttribute("hidden");
+      else moveRow.setAttribute("hidden", "");
     });
   });
 
@@ -1396,6 +1534,23 @@ function renderControlsOnly() {
   els.reshuffleTeamsBtn.disabled = state.membershipLocked;
   els.addEmptyTeamBtn.disabled = state.membershipLocked;
   els.teamCountInput.disabled = state.membershipLocked;
+  if (els.toggleTeamsLockBtn) {
+    els.toggleTeamsLockBtn.textContent = state.membershipLocked ? t("unlockTeams") : t("lockTeams");
+    els.toggleTeamsLockBtn.disabled = hasRounds();
+  }
+
+  if (els.participantNameInput) els.participantNameInput.disabled = state.participantsLocked;
+  if (els.bulkParticipantsInput) els.bulkParticipantsInput.disabled = state.participantsLocked;
+  if (els.bulkAddBtn) els.bulkAddBtn.disabled = state.participantsLocked;
+  if (els.clearParticipantsBtn) els.clearParticipantsBtn.disabled = state.participantsLocked;
+  if (els.toggleParticipantsLockBtn) {
+    els.toggleParticipantsLockBtn.textContent = state.participantsLocked ? t("unlockParticipants") : t("lockParticipants");
+    els.toggleParticipantsLockBtn.disabled = hasRounds();
+  }
+  if (els.participantsLockHint) {
+    if (hasRounds()) els.participantsLockHint.textContent = t("participantsAutoLockedHint");
+    else els.participantsLockHint.textContent = state.participantsLocked ? t("participantsLockedHint") : t("participantsUnlockedHint");
+  }
 
   if (els.exportExcelBtn) {
     els.exportExcelBtn.disabled = !state.tournamentEnded || !canExportTournamentData();

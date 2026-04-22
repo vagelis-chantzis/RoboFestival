@@ -312,6 +312,21 @@ h3 {
   min-width: 0;
 }
 
+.countBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  padding: 2px 8px;
+  margin-left: 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-pill);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.2;
+}
+
 .card__collapseBtn {
   flex-shrink: 0;
   padding: 6px 12px;
@@ -508,6 +523,16 @@ select {
   color: var(--muted);
 }
 
+.pill__meta--assigned {
+  color: #39d98a;
+  font-weight: 600;
+}
+
+.pill__check {
+  display: inline-block;
+  font-weight: 700;
+}
+
 .pill__actions {
   display: inline-flex;
   gap: 8px;
@@ -610,7 +635,48 @@ select {
 }
 
 .teamNameInput {
-  font-weight: 700;
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: 0.01em;
+  border-color: var(--accent-a35);
+  background: var(--accent-a10);
+}
+
+.teamNameInput:focus {
+  border-color: var(--accent-a70);
+}
+
+.teamCollapseBtn {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-control);
+  color: var(--text);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.teamCollapseBtn:hover {
+  border-color: var(--accent-a45);
+}
+
+.teamCollapseBtn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.teamCollapseBtn__chevron {
+  display: inline-block;
+  transform: rotate(0deg);
+  transition: transform 140ms ease;
+}
+
+.teamCollapseBtn__chevron--collapsed {
+  transform: rotate(-90deg);
 }
 
 .members {
@@ -618,6 +684,10 @@ select {
   flex-direction: column;
   gap: 6px;
   font-size: 13px;
+}
+
+.teamCard .members[hidden] {
+  display: none !important;
 }
 
 .memberRow {
@@ -640,6 +710,14 @@ select {
 .memberRow__name {
   word-break: break-word;
   line-height: 1.35;
+}
+
+.memberRow--team {
+  cursor: pointer;
+}
+
+.memberRow--team .moveRow[hidden] {
+  display: none;
 }
 
 .moveRow {
