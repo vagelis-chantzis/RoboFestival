@@ -16,6 +16,8 @@ const I18N = {
     dark: "Dark",
     light: "Light",
     exportExcel: "Export Excel",
+    exportBackup: "Export Backup",
+    importBackup: "Import Backup",
     exportDisabledTitle: "Enable after you end the tournament",
     resetTournament: "Reset tournament",
     tabsAria: "Tournament views",
@@ -120,6 +122,11 @@ const I18N = {
     lastLevelIncomplete: "last level incomplete",
     exportEnabledTitle: "Download .xlsx with participants, teams, scores, leaderboard",
     exportNeedEndTitle: "End the tournament to enable export",
+    backupOverwriteConfirm: "Import backup and overwrite current tournament data?",
+    backupImportSuccess: "Backup imported successfully.",
+    backupImportInvalid: "This file is not a valid Robofestival backup.",
+    backupImportParseError: "Could not read backup file. Please select a valid JSON backup.",
+    backupImportNoFile: "Please select a backup file first.",
   },
   el: {
     pageTitle: "Τουρνουά Robofestival",
@@ -130,6 +137,8 @@ const I18N = {
     dark: "Σκούρο",
     light: "Φωτεινό",
     exportExcel: "Εξαγωγή Excel",
+    exportBackup: "Εξαγωγή αντιγράφου",
+    importBackup: "Εισαγωγή αντιγράφου",
     exportDisabledTitle: "Ενεργοποιείται αφού ολοκληρώσετε το τουρνουά",
     resetTournament: "Επαναφορά τουρνουά",
     tabsAria: "Προβολές τουρνουά",
@@ -234,6 +243,11 @@ const I18N = {
     lastLevelIncomplete: "τελευταίο επίπεδο ημιτελές",
     exportEnabledTitle: "Λήψη .xlsx με συμμετέχοντες, ομάδες, σκορ, κατάταξη",
     exportNeedEndTitle: "Ολοκληρώστε το τουρνουά για να ενεργοποιηθεί η εξαγωγή",
+    backupOverwriteConfirm: "Να εισαχθεί το αντίγραφο και να αντικατασταθούν τα τρέχοντα δεδομένα του τουρνουά;",
+    backupImportSuccess: "Το αντίγραφο εισήχθη επιτυχώς.",
+    backupImportInvalid: "Αυτό το αρχείο δεν είναι έγκυρο αντίγραφο Robofestival.",
+    backupImportParseError: "Δεν ήταν δυνατή η ανάγνωση του αρχείου αντιγράφου. Επιλέξτε ένα έγκυρο JSON αντίγραφο.",
+    backupImportNoFile: "Παρακαλώ επιλέξτε πρώτα αρχείο αντιγράφου.",
   },
 };
 
@@ -392,6 +406,86 @@ function getSortedLeaderboardTeams() {
 
 function canExportTournamentData() {
   return state.participants.length > 0 || state.teams.length > 0 || state.rounds.length > 0;
+}
+
+const BACKUP_APP_ID = "robofestival-tournament";
+const BACKUP_SCHEMA_VERSION = 1;
+
+function buildBackupPayload() {
+  return {
+    app: BACKUP_APP_ID,
+    version: BACKUP_SCHEMA_VERSION,
+    exportedAt: new Date().toISOString(),
+    state,
+  };
+}
+
+function downloadTextFile(filename, content, mimeType) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function exportTournamentBackup() {
+  const payload = buildBackupPayload();
+  const text = `${JSON.stringify(payload, null, 2)}\n`;
+  const d = new Date();
+  const stamp = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  downloadTextFile(`robofestival-backup-${stamp}.json`, text, "application/json");
+}
+
+function isValidBackupPayload(raw) {
+  if (!raw || typeof raw !== "object") return false;
+  if (raw.app !== BACKUP_APP_ID) return false;
+  if (!("state" in raw) || typeof raw.state !== "object" || raw.state === null) return false;
+  const s = raw.state;
+  return Array.isArray(s.participants) && Array.isArray(s.teams) && Array.isArray(s.rounds);
+}
+
+function importTournamentBackupFile(file) {
+  if (!file) {
+    window.alert(t("backupImportNoFile"));
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const raw = JSON.parse(String(reader.result ?? ""));
+      if (!isValidBackupPayload(raw)) {
+        window.alert(t("backupImportInvalid"));
+        return;
+      }
+      const ok = window.confirm(t("backupOverwriteConfirm"));
+      if (!ok) return;
+      state = migrateLoadedState(raw.state);
+      if (state.rounds.length > 0) {
+        state.membershipLocked = true;
+        state.participantsLocked = true;
+      }
+      persist();
+      render();
+      window.alert(t("backupImportSuccess"));
+    } catch {
+      window.alert(t("backupImportParseError"));
+    } finally {
+      if (els.importBackupInput) {
+        els.importBackupInput.value = "";
+      }
+    }
+  };
+  reader.onerror = () => {
+    window.alert(t("backupImportParseError"));
+    if (els.importBackupInput) {
+      els.importBackupInput.value = "";
+    }
+  };
+  reader.readAsText(file);
 }
 
 function exportTournamentToExcel() {
@@ -970,6 +1064,8 @@ function applyStaticTranslations() {
   if (lightLabel) lightLabel.textContent = t("light");
 
   if (els.exportExcelBtn) els.exportExcelBtn.textContent = t("exportExcel");
+  if (els.exportBackupBtn) els.exportBackupBtn.textContent = t("exportBackup");
+  if (els.importBackupBtn) els.importBackupBtn.textContent = t("importBackup");
   if (els.resetBtn) els.resetBtn.textContent = t("resetTournament");
 
   const tablist = document.querySelector('.tabs[role="tablist"]');
@@ -1083,6 +1179,9 @@ const els = {
   leaderboardArea: document.getElementById("leaderboardArea"),
 
   exportExcelBtn: document.getElementById("exportExcelBtn"),
+  exportBackupBtn: document.getElementById("exportBackupBtn"),
+  importBackupBtn: document.getElementById("importBackupBtn"),
+  importBackupInput: document.getElementById("importBackupInput"),
 };
 
 function wireEvents() {
@@ -1159,6 +1258,14 @@ function wireEvents() {
   initLanguage();
 
   els.exportExcelBtn?.addEventListener("click", () => exportTournamentToExcel());
+  els.exportBackupBtn?.addEventListener("click", () => exportTournamentBackup());
+  els.importBackupBtn?.addEventListener("click", () => {
+    els.importBackupInput?.click();
+  });
+  els.importBackupInput?.addEventListener("change", () => {
+    const file = els.importBackupInput?.files?.[0] ?? null;
+    importTournamentBackupFile(file);
+  });
 }
 
 function renderParticipants() {
