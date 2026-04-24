@@ -786,6 +786,42 @@ select {
   font-weight: 700;
 }
 
+.dragMatchupHelp {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.matchTeam--draggable {
+  cursor: grab;
+  border-radius: var(--radiusSm);
+  padding: 2px 4px;
+  margin: -2px -4px;
+  border: 1px dashed transparent;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+.matchTeam--draggable:hover {
+  border-color: var(--accent-a35);
+  background: var(--accent-a10);
+}
+
+.matchTeam--dragging {
+  opacity: 0.75;
+  cursor: grabbing;
+}
+
+.matchTeam--dragOver {
+  border-color: var(--accent-a70);
+  background: var(--accent-a14);
+}
+
+.matchTeam--wouldRematch.matchTeam--dragOver {
+  border-color: rgba(230, 160, 40, 0.95);
+  background: rgba(230, 160, 40, 0.12);
+  box-shadow: 0 0 0 2px rgba(230, 160, 40, 0.28);
+}
+
 .scoreInput {
   width: 84px;
 }

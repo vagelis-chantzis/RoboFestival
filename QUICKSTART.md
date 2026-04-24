@@ -34,7 +34,7 @@ Use this page during the event for fast operation.
 
 Important:
 
-- After first level, participants/teams auto-lock.
+- After the first level, team roster moves are locked by default, but you can unlock participants anytime to edit the roster again (confirm when prompted).
 - If odd number of teams, one team gets `BYE`.
 
 ## 5) Finish tournament
@@ -52,5 +52,5 @@ Important:
 ## Common fixes
 
 - **Excel export disabled:** end tournament first.
-- **Cannot edit teams/participants:** locks are active (or auto-lock after first level).
+- **Cannot edit teams/participants:** check `Lock participants` / `Lock teams` and hints; unlock participants if you intentionally need roster changes during levels.
 - **Data missing after browser issue:** use `Import Backup`.

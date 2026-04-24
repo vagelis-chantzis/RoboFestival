@@ -38,7 +38,7 @@ Level #: ______
 
 Notes:
 
-- After first level starts, participants/teams auto-lock.
+- After levels start, use `Unlock participants` if you need roster edits mid-event (confirm when prompted).
 - Odd number of teams -> one `BYE`.
 
 ## Finish Tournament
@@ -59,6 +59,6 @@ Notes:
 ## Troubleshooting (Quick)
 
 - Excel button disabled -> end tournament first.
-- Cannot edit participants/teams -> lock active or auto-lock after first level.
+- Cannot edit participants/teams -> check lock buttons; unlock participants if allowed for your event rules.
 - Session lost -> use `Import Backup`.
 - Imported wrong file -> reset and re-import correct JSON.

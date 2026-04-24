@@ -58,8 +58,9 @@ Header actions:
 ### Lock/Unlock participants
 
 - Use `Lock participants` to prevent add/remove changes.
-- Use `Unlock participants` to allow edits again (only before levels start).
-- After the first level is created, participants are automatically locked.
+- Use `Unlock participants` to allow edits again at any time, including after levels have started.
+- When levels are active, unlocking participants also unlocks team roster moves (you will be asked to confirm).
+- Locking participants again while levels are active will re-lock team roster moves.
 
 ![Participants section](docs/screenshots/03-participants-section.png)
 
@@ -104,6 +105,13 @@ Go to `Levels + scoring`.
 
 - Click `Create next level` to generate random pairings.
 - If odd number of teams, one gets `BYE` (or `ΡΕΠΟ` in Greek).
+
+### Adjust pairings (level 2 and later)
+
+- From **level 2 onward**, while a level is still **in progress** and the tournament is not ended, you can **drag a team name onto another team name in the same level** to swap those two slots.
+- If a swap would recreate a pairing that **already happened in an earlier level**, the drop target is highlighted in amber and you get a **confirmation** before the swap is applied (you can cancel).
+- Scores for the **two affected matches** are cleared so you can re-enter them for the new pairings.
+- Level 1 pairings stay fixed (no drag).
 
 ### Enter scores
 
@@ -195,5 +203,6 @@ Generated workbook includes:
 
 ### Team/participant editing disabled
 
-- Check lock buttons.
-- If first level already exists, auto-lock is expected.
+- Check `Lock participants` / `Lock teams` and the on-screen hints.
+- If participants are locked, add/bulk/clear are blocked (Remove still works with its own confirmation).
+- Team roster moves follow `membership` lock rules (see teams section).

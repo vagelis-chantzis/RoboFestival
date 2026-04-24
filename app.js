@@ -38,7 +38,10 @@ const I18N = {
     unlockParticipants: "Unlock participants",
     participantsLockedHint: "Participant editing is locked.",
     participantsUnlockedHint: "You can add or remove participants.",
-    participantsAutoLockedHint: "Participants are locked after first level starts.",
+    participantsUnlockedWithLevelsHint:
+      "Participant editing is unlocked. You can add or remove participants and move players between teams while levels are in progress.",
+    unlockParticipantsOpensRostersConfirm:
+      "Levels have started. Unlocking participants will also allow moving players between teams and editing rosters. Continue?",
     teams: "Teams",
     teamsHelp: "Create teams randomly, add empty teams, then drag players between teams and the unassigned bench.",
     numberOfTeams: "Number of teams",
@@ -86,6 +89,11 @@ const I18N = {
     headerTotalPoints: "Total points",
     headerMatchesPlayed: "Matches played",
     bye: "BYE",
+    dragMatchupTitle: "Drag onto another team in this level to swap pairings (scores for both matches are cleared).",
+    dragMatchupLevel2Hint:
+      "From level 2 onward: drag a team name onto another team in this level to swap pairings. Scores for the two affected matches are cleared.",
+    rematchPairingConfirm:
+      "One or more pairings already met in an earlier level:\n\n{list}\n\nApply this swap anyway?",
     teamLabel: "Team {n}",
     removeLevelConfirm: "Remove this level? Matchups and any scores for it will be discarded.",
     levelComplete: " · complete",
@@ -95,6 +103,9 @@ const I18N = {
     resetConfirm: "Reset tournament? This clears saved data in this browser.",
     clearParticipantsConfirm: "Clear all participants and teams?",
     participantsLockedActionBlocked: "Participants are locked.",
+    removeParticipantConfirm: "Remove {name} from the roster? They will also be removed from any team.",
+    removeParticipantWhileLockedConfirm:
+      "Participants are currently locked. Remove {name} from the roster anyway? They will also be removed from any team.",
     noParticipantsYet: "No participants yet.",
     inATeam: "in a team",
     notAssigned: "not assigned",
@@ -159,7 +170,10 @@ const I18N = {
     unlockParticipants: "Ξεκλείδωμα συμμετεχόντων",
     participantsLockedHint: "Η επεξεργασία συμμετεχόντων είναι κλειδωμένη.",
     participantsUnlockedHint: "Μπορείτε να προσθέσετε ή να αφαιρέσετε συμμετέχοντες.",
-    participantsAutoLockedHint: "Οι συμμετέχοντες κλειδώνουν μετά την έναρξη του πρώτου επιπέδου.",
+    participantsUnlockedWithLevelsHint:
+      "Η επεξεργασία συμμετεχόντων είναι ξεκλείδωτη. Μπορείτε να προσθέτετε/αφαιρείτε συμμετέχοντες και να μετακινείτε παίκτες μεταξύ ομάδων ενώ τρέχουν επίπεδα.",
+    unlockParticipantsOpensRostersConfirm:
+      "Έχουν ξεκινήσει επίπεδα. Το ξεκλείδωμα συμμετεχόντων θα επιτρέψει και τη μετακίνηση παικτών μεταξύ ομάδων. Συνέχεια;",
     teams: "Ομάδες",
     teamsHelp: "Δημιουργήστε ομάδες τυχαία, προσθέστε κενές ομάδες και μετά σύρετε παίκτες ανάμεσα στις ομάδες και στον πάγκο.",
     numberOfTeams: "Αριθμός ομάδων",
@@ -207,6 +221,11 @@ const I18N = {
     headerTotalPoints: "Συνολικοί πόντοι",
     headerMatchesPlayed: "Αγώνες",
     bye: "ΡΕΠΟ",
+    dragMatchupTitle: "Σύρετε πάνω σε άλλη ομάδα στο ίδιο επίπεδο για ανταλλαγή ζευγαριού (καθαρίζονται τα σκορ των δύο αγώνων).",
+    dragMatchupLevel2Hint:
+      "Από το 2ο επίπεδο και μετά: σύρετε ένα όνομα ομάδας πάνω σε άλλο στο ίδιο επίπεδο για ανταλλαγή. Καθαρίζονται τα σκορ των δύο αγώνων.",
+    rematchPairingConfirm:
+      "Ένα ή περισσότερα ζευγάρια έχουν ήδη συναντηθεί σε προηγούμενο επίπεδο:\n\n{list}\n\nΝα εφαρμοστεί η ανταλλαγή παρά ταύτα;",
     teamLabel: "Ομάδα {n}",
     removeLevelConfirm: "Να διαγραφεί αυτό το επίπεδο; Τα ζευγάρια και τυχόν σκορ θα χαθούν.",
     levelComplete: " · ολοκληρώθηκε",
@@ -216,6 +235,9 @@ const I18N = {
     resetConfirm: "Επαναφορά τουρνουά; Αυτό θα διαγράψει τα αποθηκευμένα δεδομένα σε αυτόν τον browser.",
     clearParticipantsConfirm: "Να διαγραφούν όλοι οι συμμετέχοντες και οι ομάδες;",
     participantsLockedActionBlocked: "Οι συμμετέχοντες είναι κλειδωμένοι.",
+    removeParticipantConfirm: "Να αφαιρεθεί ο/η {name} από τη λίστα; Θα αφαιρεθεί και από κάθε ομάδα.",
+    removeParticipantWhileLockedConfirm:
+      "Οι συμμετέχοντες είναι κλειδωμένοι. Να αφαιρεθεί ο/η {name} παρά ταύτα; Θα αφαιρεθεί και από κάθε ομάδα.",
     noParticipantsYet: "Δεν υπάρχουν συμμετέχοντες ακόμα.",
     inATeam: "σε ομάδα",
     notAssigned: "δεν έχει ανατεθεί",
@@ -339,10 +361,11 @@ function migrateLoadedState(loaded) {
 
 let state = migrateLoadedState(loadState());
 let draggedMember = null;
+/** { roundId, matchId, side } while dragging a matchup slot (levels 2+). */
+let draggedMatchupSlot = null;
 const collapsedTeamIds = new Set();
 if (state.rounds.length > 0) {
   state.membershipLocked = true;
-  state.participantsLocked = true;
 }
 
 function persist() {
@@ -466,7 +489,6 @@ function importTournamentBackupFile(file) {
       state = migrateLoadedState(raw.state);
       if (state.rounds.length > 0) {
         state.membershipLocked = true;
-        state.participantsLocked = true;
       }
       persist();
       render();
@@ -569,6 +591,59 @@ function getAllPairingsSet() {
   return set;
 }
 
+/** Pair keys for completed levels before `beforeRoundIndex` (0-based round index in `state.rounds`). */
+function getHistoricalPairingsSetBeforeRound(beforeRoundIndex) {
+  const set = new Set();
+  for (let i = 0; i < beforeRoundIndex && i < state.rounds.length; i++) {
+    for (const m of state.rounds[i].matches ?? []) {
+      if (m.teamAId && m.teamBId) set.add(pairKey(m.teamAId, m.teamBId));
+    }
+  }
+  return set;
+}
+
+function simulateMatchupSwapResult(roundId, matchId1, side1, matchId2, side2) {
+  if (matchId1 === matchId2 && side1 === side2) return null;
+  const round = state.rounds.find((r) => r.id === roundId);
+  if (!round) return null;
+  const m1 = (round.matches ?? []).find((m) => m.id === matchId1);
+  const m2 = (round.matches ?? []).find((m) => m.id === matchId2);
+  if (!m1 || !m2) return null;
+  const c1 = { teamAId: m1.teamAId, teamBId: m1.teamBId };
+  const c2 = { teamAId: m2.teamAId, teamBId: m2.teamBId };
+  const id1 = getMatchTeamIdOnSide(c1, side1);
+  const id2 = getMatchTeamIdOnSide(c2, side2);
+  if (!id1 || !id2) return null;
+  setMatchTeamIdOnSide(c1, side1, id2);
+  setMatchTeamIdOnSide(c2, side2, id1);
+  return { c1, c2 };
+}
+
+function findRematchesAfterSwap(beforeRoundIndex, c1, c2) {
+  const hist = getHistoricalPairingsSetBeforeRound(beforeRoundIndex);
+  const seen = new Set();
+  const out = [];
+  for (const c of [c1, c2]) {
+    if (!c.teamAId || !c.teamBId) continue;
+    const pk = pairKey(c.teamAId, c.teamBId);
+    if (hist.has(pk) && !seen.has(pk)) {
+      seen.add(pk);
+      out.push({ teamAId: c.teamAId, teamBId: c.teamBId });
+    }
+  }
+  return out;
+}
+
+function formatRematchLines(rows) {
+  return rows
+    .map(({ teamAId, teamBId }) => {
+      const a = teamById(teamAId);
+      const b = teamById(teamBId);
+      return `${teamDisplayName(a)} vs ${teamDisplayName(b)}`;
+    })
+    .join("\n");
+}
+
 function generateRandomRoundMatches(teamIds) {
   const previousPairs = getAllPairingsSet();
   const ids = [...teamIds];
@@ -637,24 +712,19 @@ function toggleTeamsLock() {
   render();
 }
 
-function lockParticipantsIfNeeded() {
-  if (!state.participantsLocked && hasRounds()) {
-    state.participantsLocked = true;
-  }
-}
-
 function canEditParticipants() {
   return !state.participantsLocked;
 }
 
 function toggleParticipantsLock() {
-  if (hasRounds()) {
-    state.participantsLocked = true;
-    persist();
-    renderControlsOnly();
-    return;
+  const nextLocked = !state.participantsLocked;
+  if (!nextLocked && hasRounds()) {
+    if (!window.confirm(t("unlockParticipantsOpensRostersConfirm"))) return;
+    state.membershipLocked = false;
+  } else if (nextLocked && hasRounds()) {
+    state.membershipLocked = true;
   }
-  state.participantsLocked = !state.participantsLocked;
+  state.participantsLocked = nextLocked;
   persist();
   render();
 }
@@ -774,10 +844,16 @@ function addParticipant(name) {
 }
 
 function removeParticipant(participantId) {
-  if (!canEditParticipants()) return;
-  state.participants = state.participants.filter((p) => p.id !== participantId);
-  for (const t of state.teams) {
-    t.memberIds = (t.memberIds ?? []).filter((id) => id !== participantId);
+  const p = participantById(participantId);
+  if (!p) return;
+  const name = participantDisplayName(p);
+  const msg = canEditParticipants()
+    ? t("removeParticipantConfirm", { name })
+    : t("removeParticipantWhileLockedConfirm", { name });
+  if (!window.confirm(msg)) return;
+  state.participants = state.participants.filter((x) => x.id !== participantId);
+  for (const team of state.teams) {
+    team.memberIds = (team.memberIds ?? []).filter((id) => id !== participantId);
   }
   persist();
   render();
@@ -821,7 +897,6 @@ function createNextRound() {
   };
   state.rounds.push(round);
   lockMembershipIfNeeded();
-  lockParticipantsIfNeeded();
   persist();
   render();
 }
@@ -1290,7 +1365,7 @@ function renderParticipants() {
             </div>
           </div>
           <div class="pill__actions">
-            <button class="miniBtn" type="button" ${editDisabled} data-action="removeParticipant" data-id="${p.id}">${t("remove")}</button>
+            <button class="miniBtn" type="button" data-action="removeParticipant" data-id="${p.id}">${t("remove")}</button>
           </div>
         </div>
       `;
@@ -1514,6 +1589,121 @@ function renderTeams() {
   }
 }
 
+function getMatchTeamIdOnSide(match, side) {
+  return side === "A" ? match.teamAId : match.teamBId;
+}
+
+function setMatchTeamIdOnSide(match, side, teamId) {
+  if (side === "A") match.teamAId = teamId;
+  else match.teamBId = teamId;
+}
+
+function resetMatchScoresForPairingEdit(match) {
+  match.scoreA = null;
+  if (match.teamBId) {
+    match.scoreB = null;
+  } else {
+    match.scoreB = 0;
+  }
+  match.status =
+    match.teamBId && typeof match.scoreA === "number" && typeof match.scoreB === "number" ? "complete" : "pending";
+}
+
+function swapMatchTeamSlots(roundId, matchId1, side1, matchId2, side2) {
+  if (state.tournamentEnded) return;
+  if (matchId1 === matchId2 && side1 === side2) return;
+  const round = state.rounds.find((r) => r.id === roundId);
+  if (!round) return;
+  const m1 = (round.matches ?? []).find((m) => m.id === matchId1);
+  const m2 = (round.matches ?? []).find((m) => m.id === matchId2);
+  if (!m1 || !m2) return;
+  const id1 = getMatchTeamIdOnSide(m1, side1);
+  const id2 = getMatchTeamIdOnSide(m2, side2);
+  if (!id1 || !id2) return;
+  setMatchTeamIdOnSide(m1, side1, id2);
+  setMatchTeamIdOnSide(m2, side2, id1);
+  resetMatchScoresForPairingEdit(m1);
+  resetMatchScoresForPairingEdit(m2);
+  persist();
+  render();
+}
+
+function attachMatchupDragHandlers() {
+  const root = els.levelsArea;
+  if (!root) return;
+  root.querySelectorAll(".matchTeam--draggable").forEach((el) => {
+    el.addEventListener("dragstart", (e) => {
+      draggedMatchupSlot = {
+        roundId: el.getAttribute("data-dnd-round"),
+        matchId: el.getAttribute("data-dnd-match"),
+        side: el.getAttribute("data-dnd-side"),
+      };
+      el.classList.add("matchTeam--dragging");
+      if (e.dataTransfer) {
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", "matchup");
+      }
+    });
+    el.addEventListener("dragend", () => {
+      el.classList.remove("matchTeam--dragging");
+      root.querySelectorAll(".matchTeam--dragOver").forEach((n) => n.classList.remove("matchTeam--dragOver"));
+      root.querySelectorAll(".matchTeam--wouldRematch").forEach((n) => n.classList.remove("matchTeam--wouldRematch"));
+      draggedMatchupSlot = null;
+    });
+    el.addEventListener("dragover", (e) => {
+      if (!draggedMatchupSlot) return;
+      if (el.getAttribute("data-dnd-round") !== draggedMatchupSlot.roundId) return;
+      e.preventDefault();
+      el.classList.add("matchTeam--dragOver");
+      const roundId = el.getAttribute("data-dnd-round");
+      const matchId = el.getAttribute("data-dnd-match");
+      const side = el.getAttribute("data-dnd-side");
+      if (matchId === draggedMatchupSlot.matchId && side === draggedMatchupSlot.side) {
+        el.classList.remove("matchTeam--wouldRematch");
+        return;
+      }
+      const roundIndex = state.rounds.findIndex((r) => r.id === roundId);
+      const sim = simulateMatchupSwapResult(
+        roundId,
+        draggedMatchupSlot.matchId,
+        draggedMatchupSlot.side,
+        matchId,
+        side,
+      );
+      const wouldRematch = Boolean(sim && findRematchesAfterSwap(roundIndex, sim.c1, sim.c2).length);
+      el.classList.toggle("matchTeam--wouldRematch", wouldRematch);
+    });
+    el.addEventListener("dragleave", () => {
+      el.classList.remove("matchTeam--dragOver", "matchTeam--wouldRematch");
+    });
+    el.addEventListener("drop", (e) => {
+      e.preventDefault();
+      el.classList.remove("matchTeam--dragOver", "matchTeam--wouldRematch");
+      if (!draggedMatchupSlot) return;
+      const roundId = el.getAttribute("data-dnd-round");
+      const matchId = el.getAttribute("data-dnd-match");
+      const side = el.getAttribute("data-dnd-side");
+      if (roundId !== draggedMatchupSlot.roundId) return;
+      if (matchId === draggedMatchupSlot.matchId && side === draggedMatchupSlot.side) return;
+      const roundIndex = state.rounds.findIndex((r) => r.id === roundId);
+      const sim = simulateMatchupSwapResult(
+        roundId,
+        draggedMatchupSlot.matchId,
+        draggedMatchupSlot.side,
+        matchId,
+        side,
+      );
+      if (!sim) return;
+      const rematches = findRematchesAfterSwap(roundIndex, sim.c1, sim.c2);
+      if (rematches.length) {
+        const list = formatRematchLines(rematches);
+        if (!window.confirm(t("rematchPairingConfirm", { list }))) return;
+      }
+      swapMatchTeamSlots(roundId, draggedMatchupSlot.matchId, draggedMatchupSlot.side, matchId, side);
+    });
+  });
+}
+
 function renderRounds() {
   if (!state.teams.length) {
     els.levelsArea.innerHTML = `<div class="muted">${t("createTeamsToStart")}</div>`;
@@ -1528,6 +1718,10 @@ function renderRounds() {
   els.levelsArea.innerHTML = state.rounds
     .map((r, idx) => {
       const complete = isRoundComplete(r);
+      const pairingDragEnabled = idx >= 1 && !complete && !state.tournamentEnded;
+      const dragHintHtml = pairingDragEnabled
+        ? `<p class="muted dragMatchupHelp">${escapeHtml(t("dragMatchupLevel2Hint"))}</p>`
+        : "";
       const matchesHtml = (r.matches ?? [])
         .map((m) => {
           const a = teamById(m.teamAId);
@@ -1538,13 +1732,23 @@ function renderRounds() {
           const scoreBDisabled = scoresLocked || !b ? "disabled" : "";
           const scoreAVal = typeof m.scoreA === "number" ? String(m.scoreA) : "";
           const scoreBVal = typeof m.scoreB === "number" ? String(m.scoreB) : b ? "" : "0";
+          const clsA = `matchTeam${pairingDragEnabled && m.teamAId ? " matchTeam--draggable" : ""}`;
+          const clsB = `matchTeam${pairingDragEnabled && m.teamBId ? " matchTeam--draggable" : ""}`;
+          const dndA =
+            pairingDragEnabled && m.teamAId
+              ? ` draggable="true" data-dnd-round="${escapeAttr(r.id)}" data-dnd-match="${escapeAttr(m.id)}" data-dnd-side="A" title="${escapeAttr(t("dragMatchupTitle"))}"`
+              : "";
+          const dndB =
+            pairingDragEnabled && m.teamBId
+              ? ` draggable="true" data-dnd-round="${escapeAttr(r.id)}" data-dnd-match="${escapeAttr(m.id)}" data-dnd-side="B" title="${escapeAttr(t("dragMatchupTitle"))}"`
+              : "";
           return `
             <div class="matchRow">
-              <div class="matchTeam">${escapeHtml(teamDisplayName(a))}</div>
+              <div class="${clsA}"${dndA}>${escapeHtml(teamDisplayName(a))}</div>
               <input class="input scoreInput" inputmode="numeric" type="text" placeholder="0" autocomplete="off" ${scoreADisabled}
                 value="${escapeAttr(scoreAVal)}"
                 data-action="scoreA" data-round="${r.id}" data-match="${m.id}" />
-              <div class="matchTeam">${escapeHtml(bName)}</div>
+              <div class="${clsB}"${dndB}>${escapeHtml(bName)}</div>
               <input class="input scoreInput" inputmode="numeric" type="text" placeholder="0" autocomplete="off" ${scoreBDisabled}
                 value="${escapeAttr(scoreBVal)}"
                 data-action="scoreB" data-round="${r.id}" data-match="${m.id}" />
@@ -1569,7 +1773,7 @@ function renderRounds() {
               <small class="muted">${new Date(r.createdAt).toLocaleString()}</small>
             </div>
           </div>
-          <div class="matches">${matchesHtml}</div>
+          <div class="matches">${dragHintHtml}${matchesHtml}</div>
         </div>
       `;
     })
@@ -1585,6 +1789,8 @@ function renderRounds() {
   els.levelsArea.querySelectorAll('[data-action="removeLevel"]').forEach((btn) => {
     btn.addEventListener("click", () => removeIncompleteLevel(btn.getAttribute("data-round-id")));
   });
+
+  attachMatchupDragHandlers();
 }
 
 function renderLeaderboardOnly() {
@@ -1652,11 +1858,16 @@ function renderControlsOnly() {
   if (els.clearParticipantsBtn) els.clearParticipantsBtn.disabled = state.participantsLocked;
   if (els.toggleParticipantsLockBtn) {
     els.toggleParticipantsLockBtn.textContent = state.participantsLocked ? t("unlockParticipants") : t("lockParticipants");
-    els.toggleParticipantsLockBtn.disabled = hasRounds();
+    els.toggleParticipantsLockBtn.disabled = false;
   }
   if (els.participantsLockHint) {
-    if (hasRounds()) els.participantsLockHint.textContent = t("participantsAutoLockedHint");
-    else els.participantsLockHint.textContent = state.participantsLocked ? t("participantsLockedHint") : t("participantsUnlockedHint");
+    if (hasRounds()) {
+      els.participantsLockHint.textContent = state.participantsLocked
+        ? t("participantsLockedHint")
+        : t("participantsUnlockedWithLevelsHint");
+    } else {
+      els.participantsLockHint.textContent = state.participantsLocked ? t("participantsLockedHint") : t("participantsUnlockedHint");
+    }
   }
 
   if (els.exportExcelBtn) {
