@@ -77,6 +77,7 @@ const I18N = {
     headerName: "Name",
     headerAssignedTeam: "Assigned team",
     headerTeamName: "Team name",
+    headerCoach: "Coach",
     headerMembers: "Members",
     headerLevel: "Level",
     headerMatch: "Match",
@@ -95,6 +96,8 @@ const I18N = {
     rematchPairingConfirm:
       "One or more pairings already met in an earlier level:\n\n{list}\n\nApply this swap anyway?",
     teamLabel: "Team {n}",
+    coachLabel: "Coach",
+    coachPlaceholder: "Coach name",
     removeTeamConfirm: "Remove team \"{name}\"?",
     removeTeamWithLevelsConfirm:
       "Remove team \"{name}\"? Existing levels and scores will be cleared because matchups become invalid.",
@@ -212,6 +215,7 @@ const I18N = {
     headerName: "Όνομα",
     headerAssignedTeam: "Ανατεθειμένη ομάδα",
     headerTeamName: "Όνομα ομάδας",
+    headerCoach: "Προπονητής",
     headerMembers: "Μέλη",
     headerLevel: "Επίπεδο",
     headerMatch: "Αγώνας",
@@ -230,6 +234,8 @@ const I18N = {
     rematchPairingConfirm:
       "Ένα ή περισσότερα ζευγάρια έχουν ήδη συναντηθεί σε προηγούμενο επίπεδο:\n\n{list}\n\nΝα εφαρμοστεί η ανταλλαγή παρά ταύτα;",
     teamLabel: "Ομάδα {n}",
+    coachLabel: "Προπονητής",
+    coachPlaceholder: "Όνομα προπονητή",
     removeTeamConfirm: "Να αφαιρεθεί η ομάδα «{name}»;",
     removeTeamWithLevelsConfirm:
       "Να αφαιρεθεί η ομάδα «{name}»; Τα υπάρχοντα επίπεδα και σκορ θα διαγραφούν επειδή τα ζευγάρια θα είναι άκυρα.",
@@ -539,14 +545,14 @@ function exportTournamentToExcel() {
   }
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(partRows), t("sheetNameParticipants"));
 
-  const teamRows = [[t("headerTeamName"), t("headerMembers")]];
-  for (const t of state.teams) {
-    const names = (t.memberIds ?? [])
+  const teamRows = [[t("headerTeamName"), t("headerCoach"), t("headerMembers")]];
+  for (const team of state.teams) {
+    const names = (team.memberIds ?? [])
       .map((id) => participantById(id))
       .filter(Boolean)
       .map((p) => participantDisplayName(p))
       .join("; ");
-    teamRows.push([teamDisplayName(t), names]);
+    teamRows.push([teamDisplayName(team), String(team.coachName ?? ""), names]);
   }
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(teamRows), t("sheetNameTeams"));
 
@@ -741,6 +747,7 @@ function addEmptyTeam() {
   state.teams.push({
     id: uid("team"),
     name: t("teamLabel", { n }),
+    coachName: "",
     memberIds: [],
   });
   state.lastTeamCount = Math.max(state.lastTeamCount ?? 4, state.teams.length);
@@ -754,6 +761,7 @@ function createEmptyTeamsFromCount(teamCount) {
   const teams = Array.from({ length: n }, (_, i) => ({
     id: uid("team"),
     name: t("teamLabel", { n: i + 1 }),
+    coachName: "",
     memberIds: [],
   }));
   state.teams = teams;
@@ -773,6 +781,7 @@ function createTeamsRandom(teamCount) {
   const teams = Array.from({ length: n }, (_, i) => ({
     id: uid("team"),
     name: t("teamLabel", { n: i + 1 }),
+    coachName: "",
     memberIds: [],
   }));
 
@@ -896,9 +905,17 @@ function clearParticipants() {
 }
 
 function updateTeamName(teamId, name) {
-  const t = teamById(teamId);
-  if (!t) return;
-  t.name = String(name ?? "");
+  const team = teamById(teamId);
+  if (!team) return;
+  team.name = String(name ?? "");
+  persist();
+  renderLeaderboardOnly();
+}
+
+function updateTeamCoachName(teamId, coachName) {
+  const team = teamById(teamId);
+  if (!team) return;
+  team.coachName = String(coachName ?? "");
   persist();
   renderLeaderboardOnly();
 }
@@ -1470,6 +1487,18 @@ function renderTeams() {
         <div class="teamCard" data-action="dropTeam" data-team-id="${team.id}">
           <div class="teamCard__head">
             <input class="input teamNameInput" ${state.membershipLocked ? "disabled" : ""} value="${escapeAttr(teamDisplayName(team))}" data-action="teamName" data-id="${team.id}" />
+            <label class="labelInline teamCoachInline">
+              <span class="labelInline__text">${t("coachLabel")}</span>
+              <input
+                class="input input--small teamCoachInput"
+                type="text"
+                ${state.membershipLocked ? "disabled" : ""}
+                value="${escapeAttr(String(team.coachName ?? ""))}"
+                placeholder="${escapeAttr(t("coachPlaceholder"))}"
+                data-action="teamCoachName"
+                data-id="${team.id}"
+              />
+            </label>
             <button class="miniBtn" type="button" ${state.membershipLocked ? "disabled" : ""} data-action="removeTeam" data-team-id="${team.id}">
               ${t("remove")}
             </button>
@@ -1505,6 +1534,9 @@ function renderTeams() {
 
   els.teamsArea.querySelectorAll('[data-action="teamName"]').forEach((input) => {
     input.addEventListener("input", () => updateTeamName(input.getAttribute("data-id"), input.value));
+  });
+  els.teamsArea.querySelectorAll('[data-action="teamCoachName"]').forEach((input) => {
+    input.addEventListener("input", () => updateTeamCoachName(input.getAttribute("data-id"), input.value));
   });
 
   els.teamsArea.querySelectorAll('[data-action="toggleTeamCollapse"]').forEach((btn) => {

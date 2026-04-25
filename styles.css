@@ -632,14 +632,25 @@ select {
   gap: 10px;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
 }
 
 .teamNameInput {
+  flex: 1 1 200px;
+  min-width: 0;
   font-weight: 800;
   font-size: 16px;
   letter-spacing: 0.01em;
   border-color: var(--accent-a35);
   background: var(--accent-a10);
+}
+
+.teamCoachInline {
+  gap: 6px;
+}
+
+.teamCoachInput {
+  width: 160px;
 }
 
 .teamNameInput:focus {
