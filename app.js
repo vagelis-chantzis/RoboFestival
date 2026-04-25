@@ -95,6 +95,9 @@ const I18N = {
     rematchPairingConfirm:
       "One or more pairings already met in an earlier level:\n\n{list}\n\nApply this swap anyway?",
     teamLabel: "Team {n}",
+    removeTeamConfirm: "Remove team \"{name}\"?",
+    removeTeamWithLevelsConfirm:
+      "Remove team \"{name}\"? Existing levels and scores will be cleared because matchups become invalid.",
     removeLevelConfirm: "Remove this level? Matchups and any scores for it will be discarded.",
     levelComplete: " · complete",
     levelInProgress: " · in progress",
@@ -227,6 +230,9 @@ const I18N = {
     rematchPairingConfirm:
       "Ένα ή περισσότερα ζευγάρια έχουν ήδη συναντηθεί σε προηγούμενο επίπεδο:\n\n{list}\n\nΝα εφαρμοστεί η ανταλλαγή παρά ταύτα;",
     teamLabel: "Ομάδα {n}",
+    removeTeamConfirm: "Να αφαιρεθεί η ομάδα «{name}»;",
+    removeTeamWithLevelsConfirm:
+      "Να αφαιρεθεί η ομάδα «{name}»; Τα υπάρχοντα επίπεδα και σκορ θα διαγραφούν επειδή τα ζευγάρια θα είναι άκυρα.",
     removeLevelConfirm: "Να διαγραφεί αυτό το επίπεδο; Τα ζευγάρια και τυχόν σκορ θα χαθούν.",
     levelComplete: " · ολοκληρώθηκε",
     levelInProgress: " · σε εξέλιξη",
@@ -830,6 +836,25 @@ function removeParticipantFromTeam(participantId, teamId) {
   const idx = team.memberIds.indexOf(participantId);
   if (idx === -1) return;
   team.memberIds.splice(idx, 1);
+  persist();
+  render();
+}
+
+function removeTeam(teamId) {
+  if (state.membershipLocked) return;
+  const team = teamById(teamId);
+  if (!team) return;
+  const name = teamDisplayName(team);
+  const msg = hasRounds() ? t("removeTeamWithLevelsConfirm", { name }) : t("removeTeamConfirm", { name });
+  if (!window.confirm(msg)) return;
+  state.teams = state.teams.filter((x) => x.id !== teamId);
+  if (hasRounds()) {
+    state.rounds = [];
+    state.tournamentEnded = false;
+    state.membershipLocked = false;
+  }
+  state.lastTeamCount = Math.max(2, state.teams.length);
+  collapsedTeamIds.delete(teamId);
   persist();
   render();
 }
@@ -1445,6 +1470,9 @@ function renderTeams() {
         <div class="teamCard" data-action="dropTeam" data-team-id="${team.id}">
           <div class="teamCard__head">
             <input class="input teamNameInput" ${state.membershipLocked ? "disabled" : ""} value="${escapeAttr(teamDisplayName(team))}" data-action="teamName" data-id="${team.id}" />
+            <button class="miniBtn" type="button" ${state.membershipLocked ? "disabled" : ""} data-action="removeTeam" data-team-id="${team.id}">
+              ${t("remove")}
+            </button>
             <button
               class="teamCollapseBtn"
               type="button"
@@ -1486,6 +1514,12 @@ function renderTeams() {
       if (collapsedTeamIds.has(teamId)) collapsedTeamIds.delete(teamId);
       else collapsedTeamIds.add(teamId);
       renderTeams();
+    });
+  });
+
+  els.teamsArea.querySelectorAll('[data-action="removeTeam"]').forEach((btn) => {
+    btn.addEventListener("click", () => {
+      removeTeam(btn.getAttribute("data-team-id"));
     });
   });
 
