@@ -1583,9 +1583,20 @@ function wireEvents() {
     clearParticipants();
   });
   els.toggleParticipantsLockBtn?.addEventListener("click", () => toggleParticipantsLock());
-  els.toggleChannelsManagerBtn?.addEventListener("click", () => {
-    setChannelsManagerOpen(!isChannelsManagerOpen());
-    renderChannelsManager();
+  if (!els.toggleChannelsManagerBtn) {
+    els.toggleChannelsManagerBtn = document.getElementById("toggleChannelsManagerBtn");
+  }
+  if (!els.channelsManager) {
+    els.channelsManager = document.getElementById("channelsManager");
+  }
+  els.toggleChannelsManagerBtn?.addEventListener("click", (event) => {
+    event.preventDefault();
+    try {
+      setChannelsManagerOpen(!isChannelsManagerOpen());
+      renderChannelsManager();
+    } catch (err) {
+      console.error("Failed to toggle channels manager", err);
+    }
   });
 
   els.teamCountInput.value = String(state.lastTeamCount ?? 4);
@@ -1631,6 +1642,7 @@ function isChannelsManagerOpen() {
 }
 
 function setChannelsManagerOpen(open) {
+  if (!els.channelsManager) els.channelsManager = document.getElementById("channelsManager");
   if (!els.channelsManager) return;
   els.channelsManager.dataset.open = open ? "1" : "0";
   try {
@@ -1641,6 +1653,10 @@ function setChannelsManagerOpen(open) {
 }
 
 function renderChannelsManager() {
+  if (!els.channelsManager) els.channelsManager = document.getElementById("channelsManager");
+  if (!els.toggleChannelsManagerBtn) {
+    els.toggleChannelsManagerBtn = document.getElementById("toggleChannelsManagerBtn");
+  }
   if (!els.channelsManager) return;
   const open = isChannelsManagerOpen();
 
@@ -1651,10 +1667,12 @@ function renderChannelsManager() {
 
   if (!open) {
     els.channelsManager.hidden = true;
+    els.channelsManager.removeAttribute("style");
     els.channelsManager.innerHTML = "";
     return;
   }
   els.channelsManager.hidden = false;
+  els.channelsManager.removeAttribute("style");
 
   const rows = state.channels
     .map(
