@@ -2,12 +2,13 @@
  * Non-module script: works when opening index.html via file:// (ES import would fail).
  */
 (function () {
-  const STORAGE_KEY = "roboFestivalTournament.v1";
+  const STORAGE_KEY_V1 = "roboFestivalTournament.v1";
+  const STORAGE_KEY_V2 = "roboFestivalTournament.v2";
 
   window.TournamentStorage = {
     loadState() {
       try {
-        const raw = localStorage.getItem(STORAGE_KEY);
+        const raw = localStorage.getItem(STORAGE_KEY_V2) ?? localStorage.getItem(STORAGE_KEY_V1);
         if (!raw) return null;
         const parsed = JSON.parse(raw);
         if (!parsed || typeof parsed !== "object") return null;
@@ -17,10 +18,11 @@
       }
     },
     saveState(state) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(state));
     },
     clearState() {
-      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(STORAGE_KEY_V1);
+      localStorage.removeItem(STORAGE_KEY_V2);
     },
   };
 })();

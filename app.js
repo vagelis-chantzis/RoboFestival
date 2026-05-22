@@ -7,6 +7,9 @@ const UNASSIGNED = "__unassigned__";
 const LANG_KEY = "tournamentLanguage";
 const CHANNEL_REGISTRATION_FORM = "registration_form";
 const CHANNEL_IN_FESTIVAL = "in_festival";
+const APP_SCHEMA_VERSION = 2;
+const APP_MODE_CLASSIC = "classic";
+const APP_MODE_TABLES = "tables";
 
 const I18N = {
   en: {
@@ -64,6 +67,18 @@ const I18N = {
     expandTeam: "Expand team",
     levelsScoring: "Levels + scoring",
     levelsHelp: "All teams play each level. Enter scores for every match to complete a level.",
+    modeLabel: "Mode",
+    modeClassic: "Classic",
+    modeTables: "With tables",
+    modeLockedHint: "mode locked after first level",
+    numberOfTables: "Number of tables",
+    tableLabel: "Table {n}",
+    tableEmpty: "Empty",
+    tableOnMatch: "On match",
+    tableWaitingNext: "Waiting for next match",
+    matchQueue: "Up next",
+    matchQueueEmpty: "No waiting matchups.",
+    tableModeHelp: "Table mode: each table runs one matchup, then auto-pulls the next available matchup.",
     createNextLevel: "Create next level",
     endTournament: "End tournament",
     resumeAddLevels: "Resume / add levels",
@@ -91,6 +106,7 @@ const I18N = {
     headerScoreA: "Score A",
     headerTeamB: "Team B",
     headerScoreB: "Score B",
+    headerTable: "Table",
     headerRank: "Rank",
     headerTeam: "Team",
     headerTotalPoints: "Total points",
@@ -224,6 +240,18 @@ const I18N = {
     expandTeam: "Ανάπτυξη ομάδας",
     levelsScoring: "Επίπεδα + βαθμολογία",
     levelsHelp: "Όλες οι ομάδες παίζουν σε κάθε επίπεδο. Συμπληρώστε σκορ σε κάθε αγώνα για να ολοκληρωθεί το επίπεδο.",
+    modeLabel: "Λειτουργία",
+    modeClassic: "Κλασική",
+    modeTables: "Με τραπέζια",
+    modeLockedHint: "η λειτουργία κλειδώνει μετά το πρώτο επίπεδο",
+    numberOfTables: "Αριθμός τραπεζιών",
+    tableLabel: "Τραπέζι {n}",
+    tableEmpty: "Άδειο",
+    tableOnMatch: "Σε αγώνα",
+    tableWaitingNext: "Αναμονή για επόμενο αγώνα",
+    matchQueue: "Επόμενοι αγώνες",
+    matchQueueEmpty: "Δεν υπάρχουν αγώνες σε αναμονή.",
+    tableModeHelp: "Λειτουργία τραπεζιών: κάθε τραπέζι παίρνει έναν αγώνα και μετά τον επόμενο διαθέσιμο.",
     createNextLevel: "Δημιουργία επόμενου επιπέδου",
     endTournament: "Τερματισμός τουρνουά",
     resumeAddLevels: "Συνέχιση / προσθήκη επιπέδων",
@@ -251,6 +279,7 @@ const I18N = {
     headerScoreA: "Σκορ Α",
     headerTeamB: "Ομάδα Β",
     headerScoreB: "Σκορ Β",
+    headerTable: "Τραπέζι",
     headerRank: "Θέση",
     headerTeam: "Ομάδα",
     headerTotalPoints: "Συνολικοί πόντοι",
@@ -419,8 +448,14 @@ function migrateChannels(loadedChannels) {
   return [...byId.values()];
 }
 
+function normalizeAppMode(value) {
+  return value === APP_MODE_TABLES ? APP_MODE_TABLES : APP_MODE_CLASSIC;
+}
+
 function defaultState() {
   return {
+    schemaVersion: APP_SCHEMA_VERSION,
+    appMode: APP_MODE_CLASSIC,
     participants: [],
     teams: [],
     rounds: [],
@@ -428,6 +463,8 @@ function defaultState() {
     membershipLocked: false,
     participantsLocked: false,
     lastTeamCount: 4,
+    tableCount: 3,
+    tables: [],
     channels: defaultChannels(),
   };
 }
@@ -437,6 +474,7 @@ function migrateLoadedState(loaded) {
   if (!loaded) return base;
   const channels = migrateChannels(loaded.channels);
   const defaultChannelId = channels[0]?.id ?? CHANNEL_REGISTRATION_FORM;
+  const appMode = normalizeAppMode(loaded.appMode);
   const participants = (Array.isArray(loaded.participants) ? loaded.participants : []).map((p) => {
     const channelId =
       typeof p.channelId === "string" && channels.some((c) => c.id === p.channelId)
@@ -448,17 +486,29 @@ function migrateLoadedState(loaded) {
       noShow: Boolean(p.noShow),
     };
   });
+  const rounds = (Array.isArray(loaded.rounds) ? loaded.rounds : []).map((round) => ({
+    ...round,
+    matches: (Array.isArray(round?.matches) ? round.matches : []).map((match) => ({
+      ...match,
+      tableId: typeof match?.tableId === "string" ? match.tableId : null,
+      tableNumber: Number.isFinite(match?.tableNumber) ? match.tableNumber : null,
+    })),
+  }));
   return {
     ...base,
     ...loaded,
+    schemaVersion: APP_SCHEMA_VERSION,
+    appMode,
     participants,
     channels,
     teams: Array.isArray(loaded.teams) ? loaded.teams : [],
-    rounds: Array.isArray(loaded.rounds) ? loaded.rounds : [],
+    rounds,
     tournamentEnded: Boolean(loaded.tournamentEnded),
     membershipLocked: Boolean(loaded.membershipLocked),
     participantsLocked: Boolean(loaded.participantsLocked),
     lastTeamCount: Number.isFinite(loaded.lastTeamCount) ? loaded.lastTeamCount : base.lastTeamCount,
+    tableCount: clampInt(loaded.tableCount ?? base.tableCount, 1, 32),
+    tables: Array.isArray(loaded.tables) ? loaded.tables : [],
   };
 }
 
@@ -470,6 +520,7 @@ const collapsedTeamIds = new Set();
 if (state.rounds.length > 0) {
   state.membershipLocked = true;
 }
+reconcileTablesForActiveRound();
 
 function persist() {
   saveState(state);
@@ -477,6 +528,135 @@ function persist() {
 
 function hasRounds() {
   return state.rounds.length > 0;
+}
+
+function isTableMode() {
+  return state.appMode === APP_MODE_TABLES;
+}
+
+function setAppMode(nextMode) {
+  if (hasRounds()) return;
+  state.appMode = normalizeAppMode(nextMode);
+  if (!isTableMode()) {
+    clearTableAssignments();
+  } else {
+    state.tableCount = clampInt(state.tableCount ?? 3, 1, 32);
+    ensureTables(state.tableCount);
+  }
+  persist();
+  render();
+}
+
+function getActiveRound() {
+  const last = state.rounds[state.rounds.length - 1] ?? null;
+  if (!last || isRoundComplete(last) || state.tournamentEnded) return null;
+  return last;
+}
+
+function isMatchComplete(match) {
+  if (!match) return false;
+  if (!match.teamBId) return true;
+  return typeof match.scoreA === "number" && typeof match.scoreB === "number";
+}
+
+function matchTable(tableId) {
+  return state.tables.find((table) => table.id === tableId) ?? null;
+}
+
+function clearTableAssignments() {
+  state.tables = [];
+  for (const round of state.rounds) {
+    for (const match of round.matches ?? []) {
+      match.tableId = null;
+    }
+  }
+}
+
+function ensureTables(count = state.tableCount) {
+  const n = clampInt(count ?? 3, 1, 32);
+  state.tableCount = n;
+  const previous = Array.isArray(state.tables) ? state.tables : [];
+  const next = [];
+  for (let i = 1; i <= n; i++) {
+    const existing = previous.find((table) => table.number === i);
+    next.push({
+      id: existing?.id ?? `table_${i}`,
+      number: i,
+      status: existing?.status === "in_match" ? "in_match" : "empty",
+      currentMatchId: typeof existing?.currentMatchId === "string" ? existing.currentMatchId : null,
+    });
+  }
+  state.tables = next;
+}
+
+function getNextQueuedMatch(round) {
+  return (round?.matches ?? []).find((match) => !isMatchComplete(match) && !match.tableId) ?? null;
+}
+
+function assignMatchToTable(round, match, table) {
+  if (!round || !match || !table || isMatchComplete(match)) return false;
+  match.tableId = table.id;
+  table.status = "in_match";
+  table.currentMatchId = match.id;
+  return true;
+}
+
+function fillEmptyTables(round = getActiveRound()) {
+  if (!isTableMode() || !round) return;
+  ensureTables(state.tableCount);
+  for (const table of state.tables) {
+    if (table.status === "in_match" && table.currentMatchId) continue;
+    table.status = "empty";
+    table.currentMatchId = null;
+    const next = getNextQueuedMatch(round);
+    if (!next) continue;
+    assignMatchToTable(round, next, table);
+  }
+}
+
+function releaseTableAndAssignNext(tableId) {
+  if (!isTableMode()) return;
+  const table = matchTable(tableId);
+  if (!table) return;
+  table.status = "empty";
+  table.currentMatchId = null;
+  fillEmptyTables(getActiveRound());
+}
+
+function reconcileTablesForActiveRound() {
+  if (!isTableMode()) {
+    clearTableAssignments();
+    return;
+  }
+  ensureTables(state.tableCount);
+  const activeRound = getActiveRound();
+  const activeMatchIds = new Set((activeRound?.matches ?? []).map((match) => match.id));
+  for (const round of state.rounds) {
+    if (round !== activeRound) {
+      for (const match of round.matches ?? []) match.tableId = null;
+    }
+  }
+  for (const table of state.tables) {
+    const currentMatch = (activeRound?.matches ?? []).find((match) => match.id === table.currentMatchId) ?? null;
+    if (!activeRound || !currentMatch || isMatchComplete(currentMatch)) {
+      table.status = "empty";
+      table.currentMatchId = null;
+      continue;
+    }
+    table.status = "in_match";
+    currentMatch.tableId = table.id;
+  }
+  for (const match of activeRound?.matches ?? []) {
+    if (match.tableId && (!matchTable(match.tableId) || isMatchComplete(match))) {
+      match.tableId = null;
+    }
+  }
+  for (const round of state.rounds) {
+    for (const match of round.matches ?? []) {
+      if (match.tableId && !activeMatchIds.has(match.id)) match.tableId = null;
+    }
+  }
+  fillEmptyTables(activeRound);
 }
 
 function participantById(id) {
@@ -705,6 +885,7 @@ function importTournamentBackupFile(file) {
       if (state.rounds.length > 0) {
         state.membershipLocked = true;
       }
+      reconcileTablesForActiveRound();
       persist();
       render();
       window.alert(t("backupImportSuccess"));
@@ -765,14 +946,16 @@ function exportTournamentToExcel() {
   }
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(teamRows), t("sheetNameTeams"));
 
-  const scoreRows = [[t("headerLevel"), t("headerMatch"), t("headerTeamA"), t("headerScoreA"), t("headerTeamB"), t("headerScoreB")]];
+  const scoreRows = [[t("headerLevel"), t("headerMatch"), t("headerTable"), t("headerTeamA"), t("headerScoreA"), t("headerTeamB"), t("headerScoreB")]];
   state.rounds.forEach((r, ri) => {
     (r.matches ?? []).forEach((m, mi) => {
       const a = teamById(m.teamAId);
       const b = m.teamBId ? teamById(m.teamBId) : null;
+      const tableNumber = m.tableNumber ?? state.tables.find((table) => table.id === m.tableId)?.number ?? "";
       scoreRows.push([
         ri + 1,
         mi + 1,
+        tableNumber,
         a ? teamDisplayName(a) : "",
         typeof m.scoreA === "number" ? m.scoreA : "",
         b ? teamDisplayName(b) : t("bye"),
@@ -795,10 +978,7 @@ function exportTournamentToExcel() {
 }
 
 function isRoundComplete(round) {
-  return (round.matches ?? []).every((m) => {
-    if (!m.teamBId) return true;
-    return typeof m.scoreA === "number" && typeof m.scoreB === "number";
-  });
+  return (round.matches ?? []).every((m) => isMatchComplete(m));
 }
 
 function getAllPairingsSet() {
@@ -910,6 +1090,8 @@ function generateRandomRoundMatches(teamIds) {
       scoreA: null,
       scoreB: b ? null : 0,
       status: "pending",
+      tableId: null,
+      tableNumber: null,
     });
   }
   return matches;
@@ -973,6 +1155,7 @@ function createEmptyTeamsFromCount(teamCount) {
   }));
   state.teams = teams;
   state.rounds = [];
+  clearTableAssignments();
   state.tournamentEnded = false;
   state.membershipLocked = false;
   state.lastTeamCount = n;
@@ -999,6 +1182,7 @@ function createTeamsRandom(teamCount) {
 
   state.teams = teams;
   state.rounds = [];
+  clearTableAssignments();
   state.tournamentEnded = false;
   state.membershipLocked = false;
   state.lastTeamCount = n;
@@ -1082,6 +1266,7 @@ function removeTeam(teamId) {
     state.membershipLocked = false;
     state.tournamentEnded = false;
   }
+  reconcileTablesForActiveRound();
   state.lastTeamCount = Math.max(2, state.teams.length);
   collapsedTeamIds.delete(teamId);
   persist();
@@ -1123,6 +1308,7 @@ function clearParticipants() {
   state.participants = [];
   state.teams = [];
   state.rounds = [];
+  clearTableAssignments();
   state.tournamentEnded = false;
   state.membershipLocked = false;
   persist();
@@ -1164,6 +1350,12 @@ function createNextRound() {
   };
   state.rounds.push(round);
   lockMembershipIfNeeded();
+  if (isTableMode()) {
+    ensureTables(els.tableCountInput?.value ?? state.tableCount);
+    fillEmptyTables(round);
+  } else {
+    clearTableAssignments();
+  }
   persist();
   render();
 }
@@ -1178,6 +1370,7 @@ function removeIncompleteLevel(roundId) {
   if (!hasRounds()) {
     state.membershipLocked = false;
   }
+  reconcileTablesForActiveRound();
   persist();
   render();
 }
@@ -1194,12 +1387,25 @@ function setMatchScore(roundId, matchId, side, rawValue) {
   if (!round) return;
   const match = (round.matches ?? []).find((m) => m.id === matchId);
   if (!match) return;
+  const wasComplete = isMatchComplete(match);
+  const tableId = match.tableId;
   const val = parseScoreInput(rawValue);
   if (side === "A") match.scoreA = val;
   if (side === "B") match.scoreB = val;
 
-  match.status = match.teamBId && typeof match.scoreA === "number" && typeof match.scoreB === "number" ? "complete" : "pending";
+  match.status = isMatchComplete(match) ? "complete" : "pending";
+  let tableAdvanced = false;
+  if (isTableMode() && !wasComplete && isMatchComplete(match) && tableId) {
+    match.tableNumber = matchTable(tableId)?.number ?? match.tableNumber ?? null;
+    match.tableId = null;
+    releaseTableAndAssignNext(tableId);
+    tableAdvanced = true;
+  }
   persist();
+  if (tableAdvanced) {
+    render();
+    return;
+  }
   renderLeaderboardOnly();
   renderControlsOnly();
   updateAllLevelStatusLabels();
@@ -1450,6 +1656,16 @@ function applyStaticTranslations() {
   if (levelsTitle) levelsTitle.textContent = t("levelsScoring");
   const levelsHelp = document.querySelector("#panel-levels .card__header .muted");
   if (levelsHelp) levelsHelp.textContent = t("levelsHelp");
+  const appModeLabel = document.getElementById("appModeLabel");
+  if (appModeLabel) appModeLabel.textContent = t("modeLabel");
+  if (els.appModeSelect) {
+    const classicOption = els.appModeSelect.querySelector('option[value="classic"]');
+    const tablesOption = els.appModeSelect.querySelector('option[value="tables"]');
+    if (classicOption) classicOption.textContent = t("modeClassic");
+    if (tablesOption) tablesOption.textContent = t("modeTables");
+  }
+  const tableCountLabel = document.getElementById("tableCountLabel");
+  if (tableCountLabel) tableCountLabel.textContent = t("numberOfTables");
   if (els.createLevelBtn) els.createLevelBtn.textContent = t("createNextLevel");
   if (els.endTournamentBtn) els.endTournamentBtn.textContent = t("endTournament");
   if (els.resumeTournamentBtn) els.resumeTournamentBtn.textContent = t("resumeAddLevels");
@@ -1515,9 +1731,12 @@ const els = {
   teamsArea: document.getElementById("teamsArea"),
 
   createLevelBtn: document.getElementById("createLevelBtn"),
+  appModeSelect: document.getElementById("appModeSelect"),
+  tableCountInput: document.getElementById("tableCountInput"),
   endTournamentBtn: document.getElementById("endTournamentBtn"),
   resumeTournamentBtn: document.getElementById("resumeTournamentBtn"),
   levelStatus: document.getElementById("levelStatus"),
+  tablesArea: document.getElementById("tablesArea"),
   levelsArea: document.getElementById("levelsArea"),
 
   leaderboardArea: document.getElementById("leaderboardArea"),
@@ -1606,6 +1825,20 @@ function wireEvents() {
   els.addEmptyTeamBtn.addEventListener("click", () => addEmptyTeam());
   els.toggleTeamsLockBtn?.addEventListener("click", () => toggleTeamsLock());
 
+  if (els.appModeSelect) {
+    els.appModeSelect.value = state.appMode;
+    els.appModeSelect.addEventListener("change", () => setAppMode(els.appModeSelect.value));
+  }
+  if (els.tableCountInput) {
+    els.tableCountInput.value = String(state.tableCount ?? 3);
+    els.tableCountInput.addEventListener("input", () => {
+      if (!isTableMode() || getActiveRound()) return;
+      state.tableCount = clampInt(els.tableCountInput.value, 1, 32);
+      ensureTables(state.tableCount);
+      persist();
+      renderControlsOnly();
+    });
+  }
   els.createLevelBtn.addEventListener("click", () => createNextRound());
   els.endTournamentBtn.addEventListener("click", () => setTournamentEnded(true));
   els.resumeTournamentBtn.addEventListener("click", () => setTournamentEnded(false));
@@ -2139,6 +2372,105 @@ function attachMatchupDragHandlers() {
   });
 }
 
+function renderMatchScoreInputs(root) {
+  root.querySelectorAll('input[data-action="scoreA"]').forEach((input) => {
+    input.addEventListener("input", () => setMatchScore(input.getAttribute("data-round"), input.getAttribute("data-match"), "A", input.value));
+  });
+  root.querySelectorAll('input[data-action="scoreB"]').forEach((input) => {
+    input.addEventListener("input", () => setMatchScore(input.getAttribute("data-round"), input.getAttribute("data-match"), "B", input.value));
+  });
+}
+
+function renderMatchRowHtml(round, match, options = {}) {
+  const a = teamById(match.teamAId);
+  const b = match.teamBId ? teamById(match.teamBId) : null;
+  const bName = b ? teamDisplayName(b) : t("bye");
+  const scoresLocked = Boolean(options.scoresLocked) || state.tournamentEnded;
+  const scoreADisabled = scoresLocked ? "disabled" : "";
+  const scoreBDisabled = scoresLocked || !b ? "disabled" : "";
+  const scoreAVal = typeof match.scoreA === "number" ? String(match.scoreA) : "";
+  const scoreBVal = typeof match.scoreB === "number" ? String(match.scoreB) : b ? "" : "0";
+  const pairingDragEnabled = Boolean(options.pairingDragEnabled);
+  const clsA = `matchTeam${pairingDragEnabled && match.teamAId ? " matchTeam--draggable" : ""}`;
+  const clsB = `matchTeam${pairingDragEnabled && match.teamBId ? " matchTeam--draggable" : ""}`;
+  const dndA =
+    pairingDragEnabled && match.teamAId
+      ? ` draggable="true" data-dnd-round="${escapeAttr(round.id)}" data-dnd-match="${escapeAttr(match.id)}" data-dnd-side="A" title="${escapeAttr(t("dragMatchupTitle"))}"`
+      : "";
+  const dndB =
+    pairingDragEnabled && match.teamBId
+      ? ` draggable="true" data-dnd-round="${escapeAttr(round.id)}" data-dnd-match="${escapeAttr(match.id)}" data-dnd-side="B" title="${escapeAttr(t("dragMatchupTitle"))}"`
+      : "";
+  return `
+    <div class="matchRow">
+      <div class="${clsA}"${dndA}>${escapeHtml(teamDisplayName(a))}</div>
+      <input class="input scoreInput" inputmode="numeric" type="text" placeholder="0" autocomplete="off" ${scoreADisabled}
+        value="${escapeAttr(scoreAVal)}"
+        data-action="scoreA" data-round="${round.id}" data-match="${match.id}" />
+      <div class="${clsB}"${dndB}>${escapeHtml(bName)}</div>
+      <input class="input scoreInput" inputmode="numeric" type="text" placeholder="0" autocomplete="off" ${scoreBDisabled}
+        value="${escapeAttr(scoreBVal)}"
+        data-action="scoreB" data-round="${round.id}" data-match="${match.id}" />
+    </div>
+  `;
+}
+
+function renderTables() {
+  if (!els.tablesArea) return;
+  if (!isTableMode()) {
+    els.tablesArea.innerHTML = "";
+    els.tablesArea.hidden = true;
+    return;
+  }
+  els.tablesArea.hidden = false;
+  const activeRound = getActiveRound();
+  if (!activeRound) {
+    els.tablesArea.innerHTML = `<div class="muted tableModeHint">${escapeHtml(t("tableModeHelp"))}</div>`;
+    return;
+  }
+
+  const tableCards = state.tables
+    .map((table) => {
+      const match = (activeRound.matches ?? []).find((m) => m.id === table.currentMatchId) ?? null;
+      const inMatch = Boolean(match && !isMatchComplete(match));
+      return `
+        <div class="tableCard">
+          <div class="tableCard__head">
+            <strong>${escapeHtml(t("tableLabel", { n: table.number }))}</strong>
+            <span class="tableStatus ${inMatch ? "tableStatus--busy" : "tableStatus--empty"}">${escapeHtml(inMatch ? t("tableOnMatch") : t("tableEmpty"))}</span>
+          </div>
+          ${
+            inMatch
+              ? `<div class="matches">${renderMatchRowHtml(activeRound, match)}</div>`
+              : `<div class="muted tableCard__empty">${escapeHtml(t("tableWaitingNext"))}</div>`
+          }
+        </div>
+      `;
+    })
+    .join("");
+
+  const queued = (activeRound.matches ?? []).filter((match) => !isMatchComplete(match) && !match.tableId);
+  const queueHtml = queued.length
+    ? queued
+        .map((match) => {
+          const a = teamById(match.teamAId);
+          const b = match.teamBId ? teamById(match.teamBId) : null;
+          return `<div class="queueItem">${escapeHtml(teamDisplayName(a))} <span class="muted">vs</span> ${escapeHtml(b ? teamDisplayName(b) : t("bye"))}</div>`;
+        })
+        .join("")
+    : `<div class="muted">${escapeHtml(t("matchQueueEmpty"))}</div>`;
+
+  els.tablesArea.innerHTML = `
+    <div class="tableModeHint muted">${escapeHtml(t("tableModeHelp"))}</div>
+    <div class="tablesGrid">${tableCards}</div>
+    <div class="matchQueue">
+      <div class="matchQueue__title">${escapeHtml(t("matchQueue"))}</div>
+      <div class="matchQueue__items">${queueHtml}</div>
+    </div>
+  `;
+  renderMatchScoreInputs(els.tablesArea);
+}
+
 function renderRounds() {
   if (!state.teams.length) {
     els.levelsArea.innerHTML = `<div class="muted">${t("createTeamsToStart")}</div>`;
@@ -2153,43 +2485,18 @@ function renderRounds() {
   els.levelsArea.innerHTML = state.rounds
     .map((r, idx) => {
       const complete = isRoundComplete(r);
-      const pairingDragEnabled = idx >= 1 && !complete && !state.tournamentEnded;
+      const activeTableRound = isTableMode() && getActiveRound()?.id === r.id;
+      const pairingDragEnabled = idx >= 1 && !complete && !activeTableRound && !state.tournamentEnded;
       const dragHintHtml = pairingDragEnabled
         ? `<p class="muted dragMatchupHelp">${escapeHtml(t("dragMatchupLevel2Hint"))}</p>`
         : "";
       const matchesHtml = (r.matches ?? [])
-        .map((m) => {
-          const a = teamById(m.teamAId);
-          const b = m.teamBId ? teamById(m.teamBId) : null;
-          const bName = b ? teamDisplayName(b) : t("bye");
-          const scoresLocked = state.tournamentEnded;
-          const scoreADisabled = scoresLocked ? "disabled" : "";
-          const scoreBDisabled = scoresLocked || !b ? "disabled" : "";
-          const scoreAVal = typeof m.scoreA === "number" ? String(m.scoreA) : "";
-          const scoreBVal = typeof m.scoreB === "number" ? String(m.scoreB) : b ? "" : "0";
-          const clsA = `matchTeam${pairingDragEnabled && m.teamAId ? " matchTeam--draggable" : ""}`;
-          const clsB = `matchTeam${pairingDragEnabled && m.teamBId ? " matchTeam--draggable" : ""}`;
-          const dndA =
-            pairingDragEnabled && m.teamAId
-              ? ` draggable="true" data-dnd-round="${escapeAttr(r.id)}" data-dnd-match="${escapeAttr(m.id)}" data-dnd-side="A" title="${escapeAttr(t("dragMatchupTitle"))}"`
-              : "";
-          const dndB =
-            pairingDragEnabled && m.teamBId
-              ? ` draggable="true" data-dnd-round="${escapeAttr(r.id)}" data-dnd-match="${escapeAttr(m.id)}" data-dnd-side="B" title="${escapeAttr(t("dragMatchupTitle"))}"`
-              : "";
-          return `
-            <div class="matchRow">
-              <div class="${clsA}"${dndA}>${escapeHtml(teamDisplayName(a))}</div>
-              <input class="input scoreInput" inputmode="numeric" type="text" placeholder="0" autocomplete="off" ${scoreADisabled}
-                value="${escapeAttr(scoreAVal)}"
-                data-action="scoreA" data-round="${r.id}" data-match="${m.id}" />
-              <div class="${clsB}"${dndB}>${escapeHtml(bName)}</div>
-              <input class="input scoreInput" inputmode="numeric" type="text" placeholder="0" autocomplete="off" ${scoreBDisabled}
-                value="${escapeAttr(scoreBVal)}"
-                data-action="scoreB" data-round="${r.id}" data-match="${m.id}" />
-            </div>
-          `;
-        })
+        .map((m) =>
+          renderMatchRowHtml(r, m, {
+            pairingDragEnabled,
+            scoresLocked: isTableMode() || state.tournamentEnded,
+          }),
+        )
         .join("");
 
       const removeBtn = complete
@@ -2214,12 +2521,7 @@ function renderRounds() {
     })
     .join("");
 
-  els.levelsArea.querySelectorAll('input[data-action="scoreA"]').forEach((input) => {
-    input.addEventListener("input", () => setMatchScore(input.getAttribute("data-round"), input.getAttribute("data-match"), "A", input.value));
-  });
-  els.levelsArea.querySelectorAll('input[data-action="scoreB"]').forEach((input) => {
-    input.addEventListener("input", () => setMatchScore(input.getAttribute("data-round"), input.getAttribute("data-match"), "B", input.value));
-  });
+  renderMatchScoreInputs(els.levelsArea);
 
   els.levelsArea.querySelectorAll('[data-action="removeLevel"]').forEach((btn) => {
     btn.addEventListener("click", () => removeIncompleteLevel(btn.getAttribute("data-round-id")));
@@ -2266,6 +2568,15 @@ function renderLeaderboardOnly() {
 }
 
 function renderControlsOnly() {
+  if (els.appModeSelect) {
+    els.appModeSelect.value = state.appMode;
+    els.appModeSelect.disabled = hasRounds();
+    els.appModeSelect.title = hasRounds() ? t("modeLockedHint") : "";
+  }
+  if (els.tableCountInput) {
+    els.tableCountInput.value = String(state.tableCount ?? 3);
+    els.tableCountInput.disabled = !isTableMode() || Boolean(getActiveRound()) || state.tournamentEnded;
+  }
   els.createLevelBtn.disabled = !canCreateNextRound();
   els.endTournamentBtn.disabled = state.tournamentEnded;
   els.resumeTournamentBtn.disabled = !state.tournamentEnded;
@@ -2319,6 +2630,7 @@ function render() {
   renderChannelsManager();
   renderParticipants();
   renderTeams();
+  renderTables();
   renderRounds();
   renderLeaderboardOnly();
   renderControlsOnly();

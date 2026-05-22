@@ -496,9 +496,9 @@ select {
 
 .pill {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
   padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: var(--radiusSm);
@@ -508,9 +508,9 @@ select {
 .pill__main {
   display: flex;
   gap: 10px;
-  align-items: flex-start;
+  align-items: center;
   min-width: 0;
-  flex: 1;
+  width: 100%;
 }
 
 .pill__name {
@@ -535,7 +535,9 @@ select {
 }
 
 .pill__actions {
-  display: inline-flex;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 8px;
 }
 
@@ -841,6 +843,120 @@ select {
 .scoreInput:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.tablesArea {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.tablesArea[hidden] {
+  display: none !important;
+}
+
+.tableModeHint {
+  font-size: 13px;
+}
+
+.tablesGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.tableCard,
+.matchQueue {
+  border: 1px solid var(--border);
+  border-radius: var(--radiusSm);
+  background: var(--surface-pill);
+  padding: 12px;
+}
+
+.tableCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.tableCard__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.tableCard__empty {
+  padding: 10px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radiusSm);
+  background: var(--surface-card-inner);
+}
+
+.tableStatus {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.tableStatus--busy {
+  color: var(--text);
+  border-color: var(--accent-a45);
+  background: var(--accent-a12);
+}
+
+.tableStatus--empty {
+  color: var(--muted);
+  background: var(--surface-card-inner);
+}
+
+.matchQueue {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.matchQueue__title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--muted);
+}
+
+.matchQueue__items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.queueItem {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-card-inner);
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+@media (max-width: 1100px) {
+  .tablesGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .tablesGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .matchRow {
+    grid-template-columns: 1fr 74px;
+  }
 }
 
 .leaderboardTable {

@@ -159,12 +159,24 @@
           </div>
 
           <div class="row row--wrap row--gap">
+            <label class="labelInline">
+              <span id="appModeLabel" class="labelInline__text">Mode</span>
+              <select id="appModeSelect" class="input input--small">
+                <option value="classic">Classic</option>
+                <option value="tables">With tables</option>
+              </select>
+            </label>
+            <label class="labelInline">
+              <span id="tableCountLabel" class="labelInline__text">Number of tables</span>
+              <input id="tableCountInput" class="input input--small" type="number" min="1" step="1" value="3" />
+            </label>
             <button id="createLevelBtn" class="btn" type="button">Create next level</button>
             <button id="endTournamentBtn" class="btn btn--ghost" type="button">End tournament</button>
             <button id="resumeTournamentBtn" class="btn btn--ghost" type="button">Resume / add levels</button>
             <span id="levelStatus" class="muted"></span>
           </div>
 
+          <div id="tablesArea" class="tablesArea" aria-live="polite"></div>
           <div id="levelsArea" class="levels" aria-live="polite"></div>
         </section>
       </div>
