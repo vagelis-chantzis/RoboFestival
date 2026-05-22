@@ -55,6 +55,27 @@ Header actions:
 - Assigned players show a green check (`in a team`).
 - Unassigned players show `not assigned`.
 
+### Registration channel (RF / IF)
+
+Each participant has a color-coded channel badge in the list:
+
+| How added | Default channel | Badge |
+|-----------|-----------------|-------|
+| **Bulk paste** → Add lines | Registration Form | **RF** (blue) |
+| **Add** (single name field) | In Festival | **IF** (green) |
+
+- Click a participant's badge to cycle them to the next channel (e.g. RF → IF → any custom channel → back to RF).
+- Use **Manage channels** above the list to edit short labels, full labels, and colors, add custom channels, or remove unused ones.
+- Channels in use by any participant cannot be removed.
+
+### Show / no-show
+
+- Use **Mark no-show** on a participant to record that they did not attend.
+- No-shows are shown dimmed with strikethrough and a **No-show** label; they are **removed from any team** automatically (back to unassigned).
+- Use **Mark present** to clear the no-show flag.
+- No-shows are skipped when using **Create randomly** / **Re-shuffle**.
+- Channel and no-show columns are included in the Excel **Participants** sheet after export.
+
 ### Lock/Unlock participants
 
 - Use `Lock participants` to prevent add/remove changes.
@@ -81,18 +102,27 @@ Header actions:
 - Drag players between teams.
 - Drag players to `Unassigned (bench)` to remove them from a team.
 - In each team row, click a player to show `Move` / `Remove` options.
+- A team with no members shows a hint that it won't be in matchups. Such teams are skipped when generating new levels.
 
 ### Team card controls
 
 - Team name is highlighted for visibility.
 - Arrow button on each team card collapses/expands team members.
 
+### Remove a team
+
+- Use the `Remove` button on a team card to delete that team at any time, including while levels are in progress or after the tournament has ended.
+- Before any levels: simple confirm and removal; players go back to `Unassigned`.
+- During or after levels: confirm with a warning. Only the matches involving that team are removed from existing levels; other teams' matches and scores stay intact. Empty rounds (if any) are dropped automatically.
+
 ### Lock/Unlock teams
 
 - Use `Lock teams` to freeze team editing and movement.
-- Use `Unlock teams` to allow changes again (only before levels start).
-- After first level is created, teams are automatically locked.
+- Use `Unlock teams` to allow changes again at any time, including after levels have started (you will be asked to confirm when levels are in progress).
+- After the first level is created, teams auto-lock as a safeguard, but you can unlock them again whenever needed.
+- While unlocked during levels you can rename teams, edit coach names, and move players. The bulk team-creation buttons (`Create randomly`, `Create empty teams`, `Re-shuffle`) stay disabled while levels exist to protect saved scores.
 - Team name editing is also locked when teams are locked.
+- The `Remove` button on a team is always available, independent of the team lock.
 
 ![Teams section and cards](docs/screenshots/04-teams-section.png)
 ![Collapsed team card](docs/screenshots/05-team-collapsed.png)
@@ -104,7 +134,9 @@ Go to `Levels + scoring`.
 ### Create levels
 
 - Click `Create next level` to generate random pairings.
-- If odd number of teams, one gets `BYE` (or `ΡΕΠΟ` in Greek).
+- Only teams that have at least one player participate. Empty teams are skipped.
+- You need at least 2 teams with players to create a level; otherwise the status shows `need at least 2 teams with players` and the button stays disabled.
+- If odd number of playing teams, one gets `BYE` (or `ΡΕΠΟ` in Greek).
 
 ### Adjust pairings (level 2 and later)
 

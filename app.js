@@ -5,6 +5,8 @@ const { loadState, saveState, clearState } = window.TournamentStorage;
 /** Sentinel for participants not on any team (bench / unassigned pool). */
 const UNASSIGNED = "__unassigned__";
 const LANG_KEY = "tournamentLanguage";
+const CHANNEL_REGISTRATION_FORM = "registration_form";
+const CHANNEL_IN_FESTIVAL = "in_festival";
 
 const I18N = {
   en: {
@@ -36,10 +38,10 @@ const I18N = {
     clearParticipants: "Clear participants",
     lockParticipants: "Lock participants",
     unlockParticipants: "Unlock participants",
-    participantsLockedHint: "Participant editing is locked.",
-    participantsUnlockedHint: "You can add or remove participants.",
+    participantsLockedHint: "Editing locked.",
+    participantsUnlockedHint: "Add/remove allowed.",
     participantsUnlockedWithLevelsHint:
-      "Participant editing is unlocked. You can add or remove participants and move players between teams while levels are in progress.",
+      "Editing unlocked; roster moves allowed too.",
     unlockParticipantsOpensRostersConfirm:
       "Levels have started. Unlocking participants will also allow moving players between teams and editing rosters. Continue?",
     teams: "Teams",
@@ -53,7 +55,11 @@ const I18N = {
     unlockTeams: "Unlock teams",
     teamsLockedHint: "Team editing is locked.",
     teamsUnlockedHint: "You can edit teams and move players.",
-    teamsAutoLockedHint: "Teams are locked after first level starts.",
+    teamsLockedWithLevelsHint: "Team editing is locked. Teams auto-lock when levels start; unlock to keep editing.",
+    teamsUnlockedWithLevelsHint:
+      "Team editing is unlocked. You can rename teams, move players, and remove teams while levels are in progress.",
+    unlockTeamsWhileLevelsConfirm:
+      "Levels have started. Unlocking teams will allow renaming, moving players, and removing teams (removing a team clears existing levels). Continue?",
     collapseTeam: "Collapse team",
     expandTeam: "Expand team",
     levelsScoring: "Levels + scoring",
@@ -100,7 +106,8 @@ const I18N = {
     coachPlaceholder: "Coach name",
     removeTeamConfirm: "Remove team \"{name}\"?",
     removeTeamWithLevelsConfirm:
-      "Remove team \"{name}\"? Existing levels and scores will be cleared because matchups become invalid.",
+      "Remove team \"{name}\"? Their matches in existing levels will be removed and any related scores will be lost. Other teams' matches stay intact.",
+    notEnoughPlayingTeams: "need at least 2 teams with players",
     removeLevelConfirm: "Remove this level? Matchups and any scores for it will be discarded.",
     levelComplete: " · complete",
     levelInProgress: " · in progress",
@@ -125,7 +132,7 @@ const I18N = {
     playerPluralSuffix: "s",
     unassignedHint: "Drop a team member here to remove them from that team (they stay enrolled).",
     move: "Move",
-    noMembers: "No members.",
+    noMembers: "No members — this team won't be in matchups.",
     noTeamsYetCreate: "No teams yet. Use \"Create empty teams\" (number above), \"Add empty team\", or \"Create randomly\".",
     createTeamsToStart: "Create teams to start levels.",
     noLevelsYet: "No levels yet. Click \"Create next level\".",
@@ -144,6 +151,22 @@ const I18N = {
     backupImportInvalid: "This file is not a valid Robofestival backup.",
     backupImportParseError: "Could not read backup file. Please select a valid JSON backup.",
     backupImportNoFile: "Please select a backup file first.",
+    channelsManagerTitle: "Registration channels",
+    manageChannels: "Manage channels",
+    hideChannels: "Hide channels",
+    addChannel: "Add channel",
+    removeChannel: "Remove",
+    channelShort: "Short",
+    channelLabel: "Label",
+    channelColor: "Color",
+    markNoShow: "Mark no-show",
+    markPresent: "Mark present",
+    noShowBadge: "No-show",
+    channelInUseAlert: "Cannot remove this channel while participants are assigned to it.",
+    headerChannel: "Channel",
+    headerNoShow: "No-show",
+    cycleChannelHint: "click to change",
+    cycleChannelAria: "Change registration channel",
   },
   el: {
     pageTitle: "Τουρνουά Robofestival",
@@ -174,10 +197,10 @@ const I18N = {
     clearParticipants: "Εκκαθάριση συμμετεχόντων",
     lockParticipants: "Κλείδωμα συμμετεχόντων",
     unlockParticipants: "Ξεκλείδωμα συμμετεχόντων",
-    participantsLockedHint: "Η επεξεργασία συμμετεχόντων είναι κλειδωμένη.",
-    participantsUnlockedHint: "Μπορείτε να προσθέσετε ή να αφαιρέσετε συμμετέχοντες.",
+    participantsLockedHint: "Επεξεργασία κλειδωμένη.",
+    participantsUnlockedHint: "Προσθήκη/αφαίρεση επιτρέπεται.",
     participantsUnlockedWithLevelsHint:
-      "Η επεξεργασία συμμετεχόντων είναι ξεκλείδωτη. Μπορείτε να προσθέτετε/αφαιρείτε συμμετέχοντες και να μετακινείτε παίκτες μεταξύ ομάδων ενώ τρέχουν επίπεδα.",
+      "Επεξεργασία ανοιχτή· επιτρέπονται και μετακινήσεις παικτών.",
     unlockParticipantsOpensRostersConfirm:
       "Έχουν ξεκινήσει επίπεδα. Το ξεκλείδωμα συμμετεχόντων θα επιτρέψει και τη μετακίνηση παικτών μεταξύ ομάδων. Συνέχεια;",
     teams: "Ομάδες",
@@ -191,7 +214,12 @@ const I18N = {
     unlockTeams: "Ξεκλείδωμα ομάδων",
     teamsLockedHint: "Η επεξεργασία ομάδων είναι κλειδωμένη.",
     teamsUnlockedHint: "Μπορείτε να επεξεργαστείτε ομάδες και να μετακινήσετε παίκτες.",
-    teamsAutoLockedHint: "Οι ομάδες κλειδώνουν μετά την έναρξη του πρώτου επιπέδου.",
+    teamsLockedWithLevelsHint:
+      "Η επεξεργασία ομάδων είναι κλειδωμένη. Οι ομάδες κλειδώνουν αυτόματα όταν ξεκινούν τα επίπεδα· ξεκλειδώστε για να συνεχίσετε την επεξεργασία.",
+    teamsUnlockedWithLevelsHint:
+      "Η επεξεργασία ομάδων είναι ξεκλείδωτη. Μπορείτε να μετονομάζετε ομάδες, να μετακινείτε παίκτες και να αφαιρείτε ομάδες ενώ τρέχουν επίπεδα.",
+    unlockTeamsWhileLevelsConfirm:
+      "Έχουν ξεκινήσει επίπεδα. Το ξεκλείδωμα ομάδων θα επιτρέψει μετονομασία, μετακίνηση παικτών και αφαίρεση ομάδων (η αφαίρεση ομάδας διαγράφει τα υπάρχοντα επίπεδα). Συνέχεια;",
     collapseTeam: "Σύμπτυξη ομάδας",
     expandTeam: "Ανάπτυξη ομάδας",
     levelsScoring: "Επίπεδα + βαθμολογία",
@@ -238,7 +266,8 @@ const I18N = {
     coachPlaceholder: "Όνομα προπονητή",
     removeTeamConfirm: "Να αφαιρεθεί η ομάδα «{name}»;",
     removeTeamWithLevelsConfirm:
-      "Να αφαιρεθεί η ομάδα «{name}»; Τα υπάρχοντα επίπεδα και σκορ θα διαγραφούν επειδή τα ζευγάρια θα είναι άκυρα.",
+      "Να αφαιρεθεί η ομάδα «{name}»; Οι αγώνες της στα υπάρχοντα επίπεδα θα αφαιρεθούν και τα σχετικά σκορ θα χαθούν. Οι αγώνες των άλλων ομάδων παραμένουν.",
+    notEnoughPlayingTeams: "χρειάζονται τουλάχιστον 2 ομάδες με παίκτες",
     removeLevelConfirm: "Να διαγραφεί αυτό το επίπεδο; Τα ζευγάρια και τυχόν σκορ θα χαθούν.",
     levelComplete: " · ολοκληρώθηκε",
     levelInProgress: " · σε εξέλιξη",
@@ -263,7 +292,7 @@ const I18N = {
     playerPluralSuffix: "ες",
     unassignedHint: "Ρίξτε εδώ μέλος ομάδας για να αφαιρεθεί από την ομάδα (παραμένει εγγεγραμμένο).",
     move: "Μετακίνηση",
-    noMembers: "Δεν υπάρχουν μέλη.",
+    noMembers: "Δεν υπάρχουν μέλη — η ομάδα δεν θα μπει σε αγώνες.",
     noTeamsYetCreate: "Δεν υπάρχουν ομάδες ακόμα. Χρησιμοποιήστε «Δημιουργία κενών ομάδων», «Προσθήκη κενής ομάδας» ή «Τυχαία δημιουργία».",
     createTeamsToStart: "Δημιουργήστε ομάδες για να ξεκινήσουν τα επίπεδα.",
     noLevelsYet: "Δεν υπάρχουν επίπεδα ακόμα. Πατήστε «Δημιουργία επόμενου επιπέδου».",
@@ -282,6 +311,22 @@ const I18N = {
     backupImportInvalid: "Αυτό το αρχείο δεν είναι έγκυρο αντίγραφο Robofestival.",
     backupImportParseError: "Δεν ήταν δυνατή η ανάγνωση του αρχείου αντιγράφου. Επιλέξτε ένα έγκυρο JSON αντίγραφο.",
     backupImportNoFile: "Παρακαλώ επιλέξτε πρώτα αρχείο αντιγράφου.",
+    channelsManagerTitle: "Κανάλια εγγραφής",
+    manageChannels: "Διαχείριση καναλιών εγγραφής",
+    hideChannels: "Απόκρυψη καναλιών εγγραφής",
+    addChannel: "Προσθήκη καναλιού",
+    removeChannel: "Αφαίρεση",
+    channelShort: "Κωδικός",
+    channelLabel: "Ονομασία καναλιού",
+    channelColor: "Χρώμα",
+    markNoShow: "Δήλωση απουσίας",
+    markPresent: "Δήλωση παρουσίας",
+    noShowBadge: "Απουσία",
+    channelInUseAlert: "Δεν μπορείτε να αφαιρέσετε αυτό το κανάλι όσο υπάρχουν συμμετέχοντες σε αυτό.",
+    headerChannel: "Κανάλι",
+    headerNoShow: "Απουσία",
+    cycleChannelHint: "κλικ για αλλαγή",
+    cycleChannelAria: "Αλλαγή καναλιού εγγραφής",
   },
 };
 
@@ -343,6 +388,37 @@ function pairKey(aId, bId) {
   return a < b ? `${a}|${b}` : `${b}|${a}`;
 }
 
+function defaultChannels() {
+  return [
+    { id: CHANNEL_REGISTRATION_FORM, short: "RF", label: "Registration Form", color: "#3b82f6" },
+    { id: CHANNEL_IN_FESTIVAL, short: "IF", label: "In Festival", color: "#10b981" },
+  ];
+}
+
+function normalizeChannelColor(color) {
+  const s = String(color ?? "").trim();
+  return /^#[0-9A-Fa-f]{6}$/.test(s) ? s : "#888888";
+}
+
+function migrateChannels(loadedChannels) {
+  const defaults = defaultChannels();
+  if (!Array.isArray(loadedChannels) || loadedChannels.length === 0) return [...defaults];
+  const byId = new Map(defaults.map((c) => [c.id, { ...c }]));
+  for (const raw of loadedChannels) {
+    if (!raw || typeof raw.id !== "string") continue;
+    byId.set(raw.id, {
+      id: raw.id,
+      short: String(raw.short ?? "?").trim().slice(0, 4) || "?",
+      label: String(raw.label ?? raw.short ?? "?").trim() || "?",
+      color: normalizeChannelColor(raw.color),
+    });
+  }
+  for (const d of defaults) {
+    if (!byId.has(d.id)) byId.set(d.id, { ...d });
+  }
+  return [...byId.values()];
+}
+
 function defaultState() {
   return {
     participants: [],
@@ -352,16 +428,31 @@ function defaultState() {
     membershipLocked: false,
     participantsLocked: false,
     lastTeamCount: 4,
+    channels: defaultChannels(),
   };
 }
 
 function migrateLoadedState(loaded) {
   const base = defaultState();
   if (!loaded) return base;
+  const channels = migrateChannels(loaded.channels);
+  const defaultChannelId = channels[0]?.id ?? CHANNEL_REGISTRATION_FORM;
+  const participants = (Array.isArray(loaded.participants) ? loaded.participants : []).map((p) => {
+    const channelId =
+      typeof p.channelId === "string" && channels.some((c) => c.id === p.channelId)
+        ? p.channelId
+        : defaultChannelId;
+    return {
+      ...p,
+      channelId,
+      noShow: Boolean(p.noShow),
+    };
+  });
   return {
     ...base,
     ...loaded,
-    participants: Array.isArray(loaded.participants) ? loaded.participants : [],
+    participants,
+    channels,
     teams: Array.isArray(loaded.teams) ? loaded.teams : [],
     rounds: Array.isArray(loaded.rounds) ? loaded.rounds : [],
     tournamentEnded: Boolean(loaded.tournamentEnded),
@@ -392,8 +483,120 @@ function participantById(id) {
   return state.participants.find((p) => p.id === id) ?? null;
 }
 
+function channelById(id) {
+  return state.channels.find((c) => c.id === id) ?? null;
+}
+
+function defaultChannelId() {
+  return state.channels[0]?.id ?? CHANNEL_REGISTRATION_FORM;
+}
+
+function resolveChannelId(channelId) {
+  if (typeof channelId === "string" && channelById(channelId)) return channelId;
+  return defaultChannelId();
+}
+
+function channelTextColor(hex) {
+  const r = Number.parseInt(hex.slice(1, 3), 16);
+  const g = Number.parseInt(hex.slice(3, 5), 16);
+  const b = Number.parseInt(hex.slice(5, 7), 16);
+  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return lum > 0.55 ? "#111111" : "#ffffff";
+}
+
+function channelDisplayLabel(channel) {
+  if (!channel) return "";
+  return `${channel.short} — ${channel.label}`;
+}
+
+function removeParticipantFromAllTeams(participantId) {
+  for (const team of state.teams) {
+    team.memberIds = (team.memberIds ?? []).filter((id) => id !== participantId);
+  }
+}
+
+function setParticipantChannel(participantId, channelId) {
+  const p = participantById(participantId);
+  if (!p) return;
+  const ch = channelById(channelId);
+  if (!ch) return;
+  p.channelId = ch.id;
+  persist();
+  render();
+}
+
+function cycleParticipantChannel(participantId) {
+  const p = participantById(participantId);
+  if (!p) return;
+  if (!state.channels.length) return;
+  const currentIdx = state.channels.findIndex((c) => c.id === p.channelId);
+  const nextIdx = currentIdx === -1 ? 0 : (currentIdx + 1) % state.channels.length;
+  p.channelId = state.channels[nextIdx].id;
+  persist();
+  render();
+}
+
+function toggleParticipantNoShow(participantId) {
+  const p = participantById(participantId);
+  if (!p) return;
+  p.noShow = !p.noShow;
+  if (p.noShow) removeParticipantFromAllTeams(participantId);
+  persist();
+  render();
+}
+
+function addChannel() {
+  const n = state.channels.length + 1;
+  const ch = {
+    id: uid("channel"),
+    short: `C${n}`,
+    label: `Channel ${n}`,
+    color: "#a855f7",
+  };
+  state.channels.push(ch);
+  setChannelsManagerOpen(true);
+  persist();
+  render();
+  requestAnimationFrame(() => {
+    const input = els.channelsManager?.querySelector(`[data-channel-short="${cssEscape(ch.id)}"]`);
+    input?.focus();
+    input?.select();
+  });
+}
+
+function updateChannel(channelId, patch) {
+  const ch = channelById(channelId);
+  if (!ch) return;
+  if (patch.short !== undefined) ch.short = String(patch.short).trim().slice(0, 4) || "?";
+  if (patch.label !== undefined) ch.label = String(patch.label).trim() || ch.short;
+  if (patch.color !== undefined) ch.color = normalizeChannelColor(patch.color);
+  persist();
+  renderParticipants();
+  renderChannelsManager();
+}
+
+function removeChannel(channelId) {
+  if (state.channels.length <= 1) return;
+  const inUse = state.participants.some((p) => p.channelId === channelId);
+  if (inUse) {
+    window.alert(t("channelInUseAlert"));
+    return;
+  }
+  state.channels = state.channels.filter((c) => c.id !== channelId);
+  persist();
+  render();
+}
+
 function teamById(id) {
   return state.teams.find((t) => t.id === id) ?? null;
+}
+
+function teamHasMembers(team) {
+  return Boolean(team) && (team.memberIds ?? []).length > 0;
+}
+
+function nonEmptyTeams() {
+  return state.teams.filter((team) => teamHasMembers(team));
 }
 
 function teamDisplayName(team) {
@@ -538,10 +741,16 @@ function exportTournamentToExcel() {
 
   const wb = XLSX.utils.book_new();
 
-  const partRows = [[t("headerName"), t("headerAssignedTeam")]];
+  const partRows = [[t("headerName"), t("headerAssignedTeam"), t("headerChannel"), t("headerNoShow")]];
   for (const p of state.participants) {
-    const team = state.teams.find((t) => (t.memberIds ?? []).includes(p.id));
-    partRows.push([participantDisplayName(p), team ? teamDisplayName(team) : ""]);
+    const team = state.teams.find((tm) => (tm.memberIds ?? []).includes(p.id));
+    const ch = channelById(p.channelId);
+    partRows.push([
+      participantDisplayName(p),
+      team ? teamDisplayName(team) : "",
+      ch ? channelDisplayLabel(ch) : "",
+      p.noShow ? "Yes" : "No",
+    ]);
   }
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(partRows), t("sheetNameParticipants"));
 
@@ -713,13 +922,11 @@ function lockMembershipIfNeeded() {
 }
 
 function toggleTeamsLock() {
-  if (hasRounds()) {
-    state.membershipLocked = true;
-    persist();
-    renderControlsOnly();
-    return;
+  const nextLocked = !state.membershipLocked;
+  if (!nextLocked && hasRounds()) {
+    if (!window.confirm(t("unlockTeamsWhileLevelsConfirm"))) return;
   }
-  state.membershipLocked = !state.membershipLocked;
+  state.membershipLocked = nextLocked;
   persist();
   render();
 }
@@ -775,7 +982,7 @@ function createEmptyTeamsFromCount(teamCount) {
 
 function createTeamsRandom(teamCount) {
   const n = clampInt(teamCount, 2, 128);
-  const participantIds = state.participants.map((p) => p.id);
+  const participantIds = state.participants.filter((p) => !p.noShow).map((p) => p.id);
   shuffleInPlace(participantIds);
 
   const teams = Array.from({ length: n }, (_, i) => ({
@@ -809,8 +1016,10 @@ function getUnassignedParticipantIds() {
 
 function assignParticipantToTeam(participantId, toTeamId) {
   if (state.membershipLocked) return;
+  const p = participantById(participantId);
+  if (p?.noShow) return;
   const to = teamById(toTeamId);
-  if (!to || !participantById(participantId)) return;
+  if (!to || !p) return;
   for (const t of state.teams) {
     const idx = (t.memberIds ?? []).indexOf(participantId);
     if (idx !== -1) t.memberIds.splice(idx, 1);
@@ -822,6 +1031,8 @@ function assignParticipantToTeam(participantId, toTeamId) {
 
 function moveParticipant(participantId, fromTeamId, toTeamId) {
   if (state.membershipLocked) return;
+  const p = participantById(participantId);
+  if (p?.noShow && toTeamId !== UNASSIGNED) return;
   if (fromTeamId === toTeamId) return;
   if (fromTeamId === UNASSIGNED) {
     assignParticipantToTeam(participantId, toTeamId);
@@ -850,17 +1061,26 @@ function removeParticipantFromTeam(participantId, teamId) {
 }
 
 function removeTeam(teamId) {
-  if (state.membershipLocked) return;
   const team = teamById(teamId);
   if (!team) return;
   const name = teamDisplayName(team);
-  const msg = hasRounds() ? t("removeTeamWithLevelsConfirm", { name }) : t("removeTeamConfirm", { name });
+  const teamInAnyRound = state.rounds.some((r) =>
+    (r.matches ?? []).some((m) => m.teamAId === teamId || m.teamBId === teamId),
+  );
+  const msg = teamInAnyRound ? t("removeTeamWithLevelsConfirm", { name }) : t("removeTeamConfirm", { name });
   if (!window.confirm(msg)) return;
   state.teams = state.teams.filter((x) => x.id !== teamId);
-  if (hasRounds()) {
-    state.rounds = [];
-    state.tournamentEnded = false;
+  if (teamInAnyRound) {
+    for (const round of state.rounds) {
+      round.matches = (round.matches ?? []).filter(
+        (m) => m.teamAId !== teamId && m.teamBId !== teamId,
+      );
+    }
+    state.rounds = state.rounds.filter((r) => (r.matches ?? []).length > 0);
+  }
+  if (!hasRounds()) {
     state.membershipLocked = false;
+    state.tournamentEnded = false;
   }
   state.lastTeamCount = Math.max(2, state.teams.length);
   collapsedTeamIds.delete(teamId);
@@ -868,11 +1088,16 @@ function removeTeam(teamId) {
   render();
 }
 
-function addParticipant(name) {
+function addParticipant(name, channelId) {
   if (!canEditParticipants()) return;
   const cleaned = normalizeName(name);
   if (!cleaned) return;
-  state.participants.push({ id: uid("p"), name: cleaned });
+  state.participants.push({
+    id: uid("p"),
+    name: cleaned,
+    channelId: resolveChannelId(channelId),
+    noShow: false,
+  });
   persist();
   render();
 }
@@ -922,7 +1147,7 @@ function updateTeamCoachName(teamId, coachName) {
 
 function canCreateNextRound() {
   if (state.tournamentEnded) return false;
-  if (state.teams.length < 2) return false;
+  if (nonEmptyTeams().length < 2) return false;
   const last = state.rounds[state.rounds.length - 1] ?? null;
   if (!last) return true;
   return isRoundComplete(last);
@@ -930,7 +1155,7 @@ function canCreateNextRound() {
 
 function createNextRound() {
   if (!canCreateNextRound()) return;
-  const teamIds = state.teams.map((t) => t.id);
+  const teamIds = nonEmptyTeams().map((t) => t.id);
   const matches = generateRandomRoundMatches(teamIds);
   const round = {
     id: uid("round"),
@@ -1276,7 +1501,9 @@ const els = {
   bulkAddBtn: document.getElementById("bulkAddBtn"),
   clearParticipantsBtn: document.getElementById("clearParticipantsBtn"),
   toggleParticipantsLockBtn: document.getElementById("toggleParticipantsLockBtn"),
+  toggleChannelsManagerBtn: document.getElementById("toggleChannelsManagerBtn"),
   participantsLockHint: document.getElementById("participantsLockHint"),
+  channelsManager: document.getElementById("channelsManager"),
 
   teamCountInput: document.getElementById("teamCountInput"),
   createTeamsBtn: document.getElementById("createTeamsBtn"),
@@ -1327,7 +1554,7 @@ function wireEvents() {
       window.alert(t("participantsLockedActionBlocked"));
       return;
     }
-    addParticipant(els.participantNameInput.value);
+    addParticipant(els.participantNameInput.value, CHANNEL_IN_FESTIVAL);
     els.participantNameInput.value = "";
     els.participantNameInput.focus();
   });
@@ -1342,7 +1569,7 @@ function wireEvents() {
       .map((l) => normalizeName(l))
       .filter(Boolean);
     if (!lines.length) return;
-    for (const line of lines) addParticipant(line);
+    for (const line of lines) addParticipant(line, CHANNEL_REGISTRATION_FORM);
     els.bulkParticipantsInput.value = "";
   });
 
@@ -1356,6 +1583,10 @@ function wireEvents() {
     clearParticipants();
   });
   els.toggleParticipantsLockBtn?.addEventListener("click", () => toggleParticipantsLock());
+  els.toggleChannelsManagerBtn?.addEventListener("click", () => {
+    setChannelsManagerOpen(!isChannelsManagerOpen());
+    renderChannelsManager();
+  });
 
   els.teamCountInput.value = String(state.lastTeamCount ?? 4);
   els.createTeamsBtn.addEventListener("click", () => createTeamsRandom(els.teamCountInput.value));
@@ -1383,13 +1614,100 @@ function wireEvents() {
     const file = els.importBackupInput?.files?.[0] ?? null;
     importTournamentBackupFile(file);
   });
+
+}
+
+const CHANNELS_MANAGER_OPEN_KEY = "channelsManagerOpen";
+
+function isChannelsManagerOpen() {
+  if (!els.channelsManager) return false;
+  if (els.channelsManager.dataset.open === "1") return true;
+  if (els.channelsManager.dataset.open === "0") return false;
+  try {
+    return sessionStorage.getItem(CHANNELS_MANAGER_OPEN_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function setChannelsManagerOpen(open) {
+  if (!els.channelsManager) return;
+  els.channelsManager.dataset.open = open ? "1" : "0";
+  try {
+    sessionStorage.setItem(CHANNELS_MANAGER_OPEN_KEY, open ? "1" : "0");
+  } catch {
+    /* ignore */
+  }
+}
+
+function renderChannelsManager() {
+  if (!els.channelsManager) return;
+  const open = isChannelsManagerOpen();
+
+  if (els.toggleChannelsManagerBtn) {
+    els.toggleChannelsManagerBtn.textContent = open ? t("hideChannels") : t("manageChannels");
+    els.toggleChannelsManagerBtn.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+
+  if (!open) {
+    els.channelsManager.hidden = true;
+    els.channelsManager.innerHTML = "";
+    return;
+  }
+  els.channelsManager.hidden = false;
+
+  const rows = state.channels
+    .map(
+      (ch) => `
+      <div class="channelRow" data-channel-id="${escapeAttr(ch.id)}">
+        <label class="channelRow__colorLabel">
+          <span class="sr-only">${escapeHtml(t("channelColor"))}</span>
+          <input type="color" class="channelRow__color" value="${escapeAttr(ch.color)}" data-action="channelColor" data-id="${escapeAttr(ch.id)}" />
+        </label>
+        <label class="channelRow__field">
+          <span class="channelRow__fieldLabel">${escapeHtml(t("channelShort"))}</span>
+          <input class="input input--small channelRow__short" type="text" maxlength="4" value="${escapeAttr(ch.short)}" data-action="channelShort" data-channel-short="${escapeAttr(ch.id)}" data-id="${escapeAttr(ch.id)}" />
+        </label>
+        <label class="channelRow__field channelRow__field--grow">
+          <span class="channelRow__fieldLabel">${escapeHtml(t("channelLabel"))}</span>
+          <input class="input input--small" type="text" value="${escapeAttr(ch.label)}" data-action="channelLabel" data-id="${escapeAttr(ch.id)}" />
+        </label>
+        <button class="miniBtn" type="button" data-action="removeChannel" data-id="${escapeAttr(ch.id)}" ${state.channels.length <= 1 ? "disabled" : ""}>${t("removeChannel")}</button>
+      </div>
+    `,
+    )
+    .join("");
+
+  els.channelsManager.innerHTML = `
+    <div class="channelsManager__head">
+      <span class="channelsManager__title">${escapeHtml(t("channelsManagerTitle"))}</span>
+    </div>
+    <div class="channelsManager__body">
+      <div class="channelsManager__rows">${rows}</div>
+      <button type="button" class="btn btn--ghost" data-action="addChannel">${t("addChannel")}</button>
+    </div>
+  `;
+
+  els.channelsManager.querySelector('[data-action="addChannel"]')?.addEventListener("click", () => addChannel());
+
+  els.channelsManager.querySelectorAll('[data-action="channelShort"]').forEach((input) => {
+    input.addEventListener("input", () => updateChannel(input.getAttribute("data-id"), { short: input.value }));
+  });
+  els.channelsManager.querySelectorAll('[data-action="channelLabel"]').forEach((input) => {
+    input.addEventListener("input", () => updateChannel(input.getAttribute("data-id"), { label: input.value }));
+  });
+  els.channelsManager.querySelectorAll('[data-action="channelColor"]').forEach((input) => {
+    input.addEventListener("input", () => updateChannel(input.getAttribute("data-id"), { color: input.value }));
+  });
+  els.channelsManager.querySelectorAll('[data-action="removeChannel"]').forEach((btn) => {
+    btn.addEventListener("click", () => removeChannel(btn.getAttribute("data-id")));
+  });
 }
 
 function renderParticipants() {
   const list = state.participants;
   const badge = document.getElementById("participantsCountBadge");
   if (badge) badge.textContent = String(list.length);
-  const editDisabled = state.participantsLocked ? "disabled" : "";
   if (!list.length) {
     els.participantsList.innerHTML = `<div class="muted">${t("noParticipantsYet")}</div>`;
     return;
@@ -1397,17 +1715,40 @@ function renderParticipants() {
 
   els.participantsList.innerHTML = list
     .map((p) => {
-      const inTeams = state.teams.some((t) => (t.memberIds ?? []).includes(p.id));
+      const inTeams = state.teams.some((tm) => (tm.memberIds ?? []).includes(p.id));
+      const ch = channelById(p.channelId) ?? channelById(defaultChannelId());
+      const chipStyle = ch
+        ? `background:${escapeAttr(ch.color)};color:${channelTextColor(ch.color)}`
+        : "";
+      const chipLabel = ch ? escapeHtml(ch.short) : "?";
+      const chipTitle = ch
+        ? escapeAttr(`${channelDisplayLabel(ch)} — ${t("cycleChannelHint")}`)
+        : "";
+      const noShowClass = p.noShow ? " pill--noShow" : "";
+      const metaParts = [];
+      if (p.noShow) metaParts.push(`<span class="pill__noShowBadge">${escapeHtml(t("noShowBadge"))}</span>`);
+      if (inTeams) {
+        metaParts.push(
+          `<span class="pill__meta pill__meta--assigned"><span class="pill__check" aria-hidden="true">✓</span> ${escapeHtml(t("inATeam"))}</span>`,
+        );
+      } else if (!p.noShow) {
+        metaParts.push(`<span class="pill__meta">${escapeHtml(t("notAssigned"))}</span>`);
+      }
+      const noShowBtnLabel = p.noShow ? t("markPresent") : t("markNoShow");
+      const chipDisabled = state.channels.length <= 1 ? "disabled" : "";
+
       return `
-        <div class="pill">
+        <div class="pill${noShowClass}" data-participant-id="${escapeAttr(p.id)}">
           <div class="pill__main">
-            <div class="pill__name">${escapeHtml(participantDisplayName(p))}</div>
-            <div class="pill__meta ${inTeams ? "pill__meta--assigned" : ""}">
-              ${inTeams ? `<span class="pill__check" aria-hidden="true">✓</span> ` : ""}${inTeams ? t("inATeam") : t("notAssigned")}
+            <button type="button" class="pill__channel" style="${chipStyle}" title="${chipTitle}" aria-label="${escapeAttr(t("cycleChannelAria"))}" data-action="cycleChannel" data-id="${escapeAttr(p.id)}" ${chipDisabled}>${chipLabel}</button>
+            <div class="pill__nameCol">
+              <div class="pill__name">${escapeHtml(participantDisplayName(p))}</div>
+              <div class="pill__metaRow">${metaParts.join(" ")}</div>
             </div>
           </div>
           <div class="pill__actions">
-            <button class="miniBtn" type="button" data-action="removeParticipant" data-id="${p.id}">${t("remove")}</button>
+            <button class="miniBtn miniBtn--noShow" type="button" data-action="toggleNoShow" data-id="${escapeAttr(p.id)}">${escapeHtml(noShowBtnLabel)}</button>
+            <button class="miniBtn" type="button" data-action="removeParticipant" data-id="${escapeAttr(p.id)}">${t("remove")}</button>
           </div>
         </div>
       `;
@@ -1416,6 +1757,14 @@ function renderParticipants() {
 
   els.participantsList.querySelectorAll('[data-action="removeParticipant"]').forEach((btn) => {
     btn.addEventListener("click", () => removeParticipant(btn.getAttribute("data-id")));
+  });
+
+  els.participantsList.querySelectorAll('[data-action="toggleNoShow"]').forEach((btn) => {
+    btn.addEventListener("click", () => toggleParticipantNoShow(btn.getAttribute("data-id")));
+  });
+
+  els.participantsList.querySelectorAll('[data-action="cycleChannel"]').forEach((btn) => {
+    btn.addEventListener("click", () => cycleParticipantChannel(btn.getAttribute("data-id")));
   });
 }
 
@@ -1426,7 +1775,9 @@ function renderTeams() {
   }
 
   if (hasRounds()) {
-    els.teamLockHint.textContent = t("teamsAutoLockedHint");
+    els.teamLockHint.textContent = state.membershipLocked
+      ? t("teamsLockedWithLevelsHint")
+      : t("teamsUnlockedWithLevelsHint");
   } else {
     els.teamLockHint.textContent = state.membershipLocked ? t("teamsLockedHint") : t("teamsUnlockedHint");
   }
@@ -1499,7 +1850,7 @@ function renderTeams() {
                 data-id="${team.id}"
               />
             </label>
-            <button class="miniBtn" type="button" ${state.membershipLocked ? "disabled" : ""} data-action="removeTeam" data-team-id="${team.id}">
+            <button class="miniBtn" type="button" data-action="removeTeam" data-team-id="${team.id}">
               ${t("remove")}
             </button>
             <button
@@ -1905,17 +2256,19 @@ function renderControlsOnly() {
   const statusParts = [];
   if (state.tournamentEnded) statusParts.push(t("tournamentEnded"));
   if (!state.teams.length) statusParts.push(t("noTeamsStatus"));
+  else if (nonEmptyTeams().length < 2) statusParts.push(t("notEnoughPlayingTeams"));
   if (last) statusParts.push(isRoundComplete(last) ? t("lastLevelComplete") : t("lastLevelIncomplete"));
   els.levelStatus.textContent = statusParts.length ? t("status", { items: statusParts.join(" · ") }) : "";
 
-  els.createTeamsBtn.disabled = state.membershipLocked;
-  els.createEmptyTeamsBtn.disabled = state.membershipLocked;
-  els.reshuffleTeamsBtn.disabled = state.membershipLocked;
+  const teamsResetDisabled = state.membershipLocked || hasRounds();
+  els.createTeamsBtn.disabled = teamsResetDisabled;
+  els.createEmptyTeamsBtn.disabled = teamsResetDisabled;
+  els.reshuffleTeamsBtn.disabled = teamsResetDisabled;
+  els.teamCountInput.disabled = teamsResetDisabled;
   els.addEmptyTeamBtn.disabled = state.membershipLocked;
-  els.teamCountInput.disabled = state.membershipLocked;
   if (els.toggleTeamsLockBtn) {
     els.toggleTeamsLockBtn.textContent = state.membershipLocked ? t("unlockTeams") : t("lockTeams");
-    els.toggleTeamsLockBtn.disabled = hasRounds();
+    els.toggleTeamsLockBtn.disabled = false;
   }
 
   if (els.participantNameInput) els.participantNameInput.disabled = state.participantsLocked;
@@ -1945,6 +2298,7 @@ function renderControlsOnly() {
 }
 
 function render() {
+  renderChannelsManager();
   renderParticipants();
   renderTeams();
   renderRounds();
