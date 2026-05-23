@@ -505,6 +505,34 @@ select {
   background: var(--surface-pill);
 }
 
+.pill--draggable {
+  cursor: grab;
+}
+
+.pill--draggable:hover {
+  border-color: var(--accent-a45);
+}
+
+.pill--dragging {
+  opacity: 0.55;
+  cursor: grabbing;
+}
+
+.pill__teamSelect {
+  width: auto;
+  min-width: 140px;
+  max-width: 100%;
+  flex: 1 1 140px;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  padding-right: 28px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' fill='none' stroke='%239aa6b8' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 12px 12px;
+}
+
 .pill__main {
   display: flex;
   gap: 10px;

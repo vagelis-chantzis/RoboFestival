@@ -139,6 +139,8 @@ const I18N = {
     noParticipantsYet: "No participants yet.",
     inATeam: "in a team",
     notAssigned: "not assigned",
+    assignToTeam: "Assign to team",
+    noTeamOption: "— no team —",
     remove: "Remove",
     lockHintLocked: "Team membership locked (levels started). You can still rename teams.",
     lockHintUnlocked: "Drag players between teams, or to/from Unassigned. Use Move -> Unassigned or drop on Unassigned to bench a player.",
@@ -313,6 +315,8 @@ const I18N = {
     noParticipantsYet: "Δεν υπάρχουν συμμετέχοντες ακόμα.",
     inATeam: "σε ομάδα",
     notAssigned: "δεν έχει ανατεθεί",
+    assignToTeam: "Ανάθεση σε ομάδα",
+    noTeamOption: "— χωρίς ομάδα —",
     remove: "Αφαίρεση",
     lockHintLocked: "Η σύνθεση ομάδων κλείδωσε (ξεκίνησαν τα επίπεδα). Μπορείτε ακόμα να μετονομάσετε ομάδες.",
     lockHintUnlocked: "Σύρετε παίκτες μεταξύ ομάδων ή προς/από τον πάγκο. Χρησιμοποιήστε Μετακίνηση -> Πάγκος ή ρίξτε στον πάγκο.",
@@ -2017,7 +2021,8 @@ function renderParticipants() {
 
   els.participantsList.innerHTML = list
     .map((p) => {
-      const inTeams = state.teams.some((tm) => (tm.memberIds ?? []).includes(p.id));
+      const currentTeam = state.teams.find((tm) => (tm.memberIds ?? []).includes(p.id)) ?? null;
+      const inTeams = Boolean(currentTeam);
       const ch = channelById(p.channelId) ?? channelById(defaultChannelId());
       const chipStyle = ch
         ? `background:${escapeAttr(ch.color)};color:${channelTextColor(ch.color)}`
@@ -2036,11 +2041,23 @@ function renderParticipants() {
       } else if (!p.noShow) {
         metaParts.push(`<span class="pill__meta">${escapeHtml(t("notAssigned"))}</span>`);
       }
-      const noShowBtnLabel = p.noShow ? t("markPresent") : t("markNoShow");
       const chipDisabled = state.channels.length <= 1 ? "disabled" : "";
+      const canDrag = !state.membershipLocked && !p.noShow;
+      const dragAttrs = canDrag
+        ? ` draggable="true" data-action="draggablePill" data-from="${escapeAttr(currentTeam?.id ?? UNASSIGNED)}"`
+        : "";
+      const selectDisabled = state.membershipLocked || p.noShow ? "disabled" : "";
+      const teamOptionsHtml =
+        `<option value="${UNASSIGNED}" ${currentTeam ? "" : "selected"}>${escapeHtml(t("noTeamOption"))}</option>` +
+        state.teams
+          .map(
+            (tm) =>
+              `<option value="${escapeAttr(tm.id)}" ${currentTeam?.id === tm.id ? "selected" : ""}>${escapeHtml(teamDisplayName(tm))}</option>`,
+          )
+          .join("");
 
       return `
-        <div class="pill${noShowClass}" data-participant-id="${escapeAttr(p.id)}">
+        <div class="pill${noShowClass}${canDrag ? " pill--draggable" : ""}" data-participant-id="${escapeAttr(p.id)}"${dragAttrs}>
           <div class="pill__main">
             <button type="button" class="pill__channel" style="${chipStyle}" title="${chipTitle}" aria-label="${escapeAttr(t("cycleChannelAria"))}" data-action="cycleChannel" data-id="${escapeAttr(p.id)}" ${chipDisabled}>${chipLabel}</button>
             <div class="pill__nameCol">
@@ -2049,7 +2066,7 @@ function renderParticipants() {
             </div>
           </div>
           <div class="pill__actions">
-            <button class="miniBtn miniBtn--noShow" type="button" data-action="toggleNoShow" data-id="${escapeAttr(p.id)}">${escapeHtml(noShowBtnLabel)}</button>
+            <select class="input input--small pill__teamSelect" data-action="pillAssignTeam" data-id="${escapeAttr(p.id)}" data-from="${escapeAttr(currentTeam?.id ?? UNASSIGNED)}" aria-label="${escapeAttr(t("assignToTeam"))}" title="${escapeAttr(t("assignToTeam"))}" ${selectDisabled}>${teamOptionsHtml}</select>
             <button class="miniBtn" type="button" data-action="removeParticipant" data-id="${escapeAttr(p.id)}">${t("remove")}</button>
           </div>
         </div>
@@ -2061,12 +2078,49 @@ function renderParticipants() {
     btn.addEventListener("click", () => removeParticipant(btn.getAttribute("data-id")));
   });
 
-  els.participantsList.querySelectorAll('[data-action="toggleNoShow"]').forEach((btn) => {
-    btn.addEventListener("click", () => toggleParticipantNoShow(btn.getAttribute("data-id")));
-  });
-
   els.participantsList.querySelectorAll('[data-action="cycleChannel"]').forEach((btn) => {
     btn.addEventListener("click", () => cycleParticipantChannel(btn.getAttribute("data-id")));
+  });
+
+  els.participantsList.querySelectorAll('[data-action="pillAssignTeam"]').forEach((select) => {
+    select.addEventListener("change", () => {
+      const pid = select.getAttribute("data-id");
+      const from = select.getAttribute("data-from") || UNASSIGNED;
+      const to = select.value || UNASSIGNED;
+      if (to === UNASSIGNED) {
+        if (from && from !== UNASSIGNED) removeParticipantFromTeam(pid, from);
+        else render();
+        return;
+      }
+      assignParticipantToTeam(pid, to);
+    });
+    select.addEventListener("mousedown", (event) => event.stopPropagation());
+    select.addEventListener("click", (event) => event.stopPropagation());
+  });
+
+  els.participantsList.querySelectorAll('[data-action="draggablePill"]').forEach((pill) => {
+    pill.addEventListener("dragstart", (event) => {
+      if (event.target.closest("button, select, option")) {
+        event.preventDefault();
+        return;
+      }
+      draggedMember = {
+        participantId: pill.getAttribute("data-participant-id"),
+        fromTeamId: pill.getAttribute("data-from") || UNASSIGNED,
+      };
+      pill.classList.add("pill--dragging");
+      if (event.dataTransfer) {
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", draggedMember.participantId || "");
+      }
+    });
+    pill.addEventListener("dragend", () => {
+      pill.classList.remove("pill--dragging");
+      draggedMember = null;
+      els.teamsArea?.querySelectorAll('[data-action="dropTeam"]').forEach((card) => {
+        card.classList.remove("teamCard--dropTarget");
+      });
+    });
   });
 }
 
@@ -2083,24 +2137,6 @@ function renderTeams() {
   } else {
     els.teamLockHint.textContent = state.membershipLocked ? t("teamsLockedHint") : t("teamsUnlockedHint");
   }
-
-  const unassignedIds = getUnassignedParticipantIds();
-  const unassignedRows =
-    unassignedIds.length > 0
-      ? unassignedIds
-          .map((pid) => participantById(pid))
-          .filter(Boolean)
-          .map((p) => {
-            const moveDisabled = state.membershipLocked ? "disabled" : "";
-            return `
-              <div class="memberRow" ${moveDisabled ? "" : 'draggable="true"'} data-action="draggableMember" data-from="${UNASSIGNED}" data-pid="${p.id}">
-                <div class="memberRow__name">${escapeHtml(participantDisplayName(p))}</div>
-                <div class="moveRow"><span class="muted" style="font-size:12px;">${t("dragIntoTeam")}</span></div>
-              </div>
-            `;
-          })
-          .join("")
-      : `<div class="muted">${t("noUnassigned")}</div>`;
 
   function teamSelectOptionsForRow(currentTeamId) {
     return (
@@ -2174,14 +2210,6 @@ function renderTeams() {
     : `<div class="muted teamsGrid__empty">${t("noTeamsYetCreate")}</div>`;
 
   els.teamsArea.innerHTML = `
-    <div class="unassignedCard" data-action="dropUnassigned">
-      <div class="unassignedCard__head">
-        <strong>${t("unassignedBench")}</strong>
-        <span class="muted" style="font-size:12px;">${t("playerCount", { count: unassignedIds.length, suffix: unassignedIds.length === 1 ? "" : t("playerPluralSuffix") })}</span>
-      </div>
-      <p class="muted unassignedCard__hint">${t("unassignedHint")}</p>
-      <div class="members unassignedCard__members">${unassignedRows}</div>
-    </div>
     <div class="teams teamsGrid">${teamsGridHtml}</div>
   `;
 
