@@ -78,7 +78,8 @@ const I18N = {
     tableWaitingNext: "Waiting for next match",
     matchQueue: "Up next",
     matchQueueEmpty: "No waiting matchups.",
-    tableModeHelp: "Table mode: each table runs one matchup, then auto-pulls the next available matchup.",
+    tableModeHelp: "Table mode: each table runs one matchup. Type both scores, then click ✓ to confirm and free the table.",
+    confirmScoreTitle: "Confirm score and free the table",
     createNextLevel: "Create next level",
     endTournament: "End tournament",
     resumeAddLevels: "Resume / add levels",
@@ -251,7 +252,8 @@ const I18N = {
     tableWaitingNext: "Αναμονή για επόμενο αγώνα",
     matchQueue: "Επόμενοι αγώνες",
     matchQueueEmpty: "Δεν υπάρχουν αγώνες σε αναμονή.",
-    tableModeHelp: "Λειτουργία τραπεζιών: κάθε τραπέζι παίρνει έναν αγώνα και μετά τον επόμενο διαθέσιμο.",
+    tableModeHelp: "Λειτουργία τραπεζιών: κάθε τραπέζι παίρνει έναν αγώνα. Συμπληρώστε και τα δύο σκορ και πατήστε ✓ για επιβεβαίωση και αποδέσμευση του τραπεζιού.",
+    confirmScoreTitle: "Επιβεβαίωση σκορ και αποδέσμευση τραπεζιού",
     createNextLevel: "Δημιουργία επόμενου επιπέδου",
     endTournament: "Τερματισμός τουρνουά",
     resumeAddLevels: "Συνέχιση / προσθήκη επιπέδων",
@@ -556,7 +558,23 @@ function getActiveRound() {
 function isMatchComplete(match) {
   if (!match) return false;
   if (!match.teamBId) return true;
-  return typeof match.scoreA === "number" && typeof match.scoreB === "number";
+  return match.status === "complete";
+}
+
+function bothScoresEntered(match) {
+  if (!match) return false;
+  if (typeof match.scoreA !== "number") return false;
+  if (match.teamBId && typeof match.scoreB !== "number") return false;
+  return true;
+}
+
+function canConfirmMatch(match) {
+  if (!match) return false;
+  if (state.tournamentEnded) return false;
+  if (!isTableMode()) return false;
+  if (!match.tableId) return false;
+  if (match.status === "complete") return false;
+  return bothScoresEntered(match);
 }
 
 function matchTable(tableId) {
@@ -1387,28 +1405,61 @@ function setMatchScore(roundId, matchId, side, rawValue) {
   if (!round) return;
   const match = (round.matches ?? []).find((m) => m.id === matchId);
   if (!match) return;
-  const wasComplete = isMatchComplete(match);
-  const tableId = match.tableId;
   const val = parseScoreInput(rawValue);
   if (side === "A") match.scoreA = val;
   if (side === "B") match.scoreB = val;
 
-  match.status = isMatchComplete(match) ? "complete" : "pending";
-  let tableAdvanced = false;
-  if (isTableMode() && !wasComplete && isMatchComplete(match) && tableId) {
-    match.tableNumber = matchTable(tableId)?.number ?? match.tableNumber ?? null;
-    match.tableId = null;
-    releaseTableAndAssignNext(tableId);
-    tableAdvanced = true;
+  if (!isTableMode()) {
+    match.status =
+      match.teamBId && typeof match.scoreA === "number" && typeof match.scoreB === "number"
+        ? "complete"
+        : "pending";
   }
   persist();
-  if (tableAdvanced) {
-    render();
-    return;
-  }
+  syncMatchScoreInputs(matchId, side, rawValue);
+  updateMatchConfirmDisabled(matchId);
   renderLeaderboardOnly();
   renderControlsOnly();
   updateAllLevelStatusLabels();
+}
+
+function confirmMatchScore(roundId, matchId) {
+  if (state.tournamentEnded) return;
+  if (!isTableMode()) return;
+  const round = state.rounds.find((r) => r.id === roundId);
+  if (!round) return;
+  const match = (round.matches ?? []).find((m) => m.id === matchId);
+  if (!match) return;
+  if (!canConfirmMatch(match)) return;
+  const tableId = match.tableId;
+  match.tableNumber = matchTable(tableId)?.number ?? match.tableNumber ?? null;
+  match.tableId = null;
+  match.status = "complete";
+  releaseTableAndAssignNext(tableId);
+  persist();
+  render();
+}
+
+function syncMatchScoreInputs(matchId, side, rawValue) {
+  if (!matchId || !side) return;
+  const value = String(rawValue ?? "");
+  document
+    .querySelectorAll(`input[data-action="score${side}"][data-match="${cssEscape(matchId)}"]`)
+    .forEach((input) => {
+      if (input.value !== value) input.value = value;
+    });
+}
+
+function updateMatchConfirmDisabled(matchId) {
+  if (!matchId) return;
+  const round = state.rounds.find((r) => (r.matches ?? []).some((m) => m.id === matchId));
+  const match = (round?.matches ?? []).find((m) => m.id === matchId) ?? null;
+  const disabled = !canConfirmMatch(match);
+  document
+    .querySelectorAll(`button[data-action="confirmMatch"][data-match="${cssEscape(matchId)}"]`)
+    .forEach((btn) => {
+      btn.disabled = disabled;
+    });
 }
 
 function updateAllLevelStatusLabels() {
@@ -2379,17 +2430,35 @@ function renderMatchScoreInputs(root) {
   root.querySelectorAll('input[data-action="scoreB"]').forEach((input) => {
     input.addEventListener("input", () => setMatchScore(input.getAttribute("data-round"), input.getAttribute("data-match"), "B", input.value));
   });
+  root.querySelectorAll('button[data-action="confirmMatch"]').forEach((btn) => {
+    btn.addEventListener("click", () => confirmMatchScore(btn.getAttribute("data-round"), btn.getAttribute("data-match")));
+  });
 }
 
 function renderMatchRowHtml(round, match, options = {}) {
   const a = teamById(match.teamAId);
   const b = match.teamBId ? teamById(match.teamBId) : null;
   const bName = b ? teamDisplayName(b) : t("bye");
-  const scoresLocked = Boolean(options.scoresLocked) || state.tournamentEnded;
+  const inTableCard = Boolean(options.inTableCard);
+  const tableNum = isTableMode()
+    ? (matchTable(match.tableId)?.number ?? match.tableNumber ?? null)
+    : null;
+  const tableBadgeHtml = tableNum
+    ? `<div class="matchTable" title="${escapeAttr(t("tableLabel", { n: tableNum }))}">T${tableNum}</div>`
+    : `<div class="matchTable matchTable--empty" aria-hidden="true"></div>`;
+  let scoresLocked = Boolean(options.scoresLocked) || state.tournamentEnded;
+  if (!scoresLocked && isTableMode()) {
+    scoresLocked = !inTableCard || isMatchComplete(match) || !match.tableId;
+  }
   const scoreADisabled = scoresLocked ? "disabled" : "";
   const scoreBDisabled = scoresLocked || !b ? "disabled" : "";
   const scoreAVal = typeof match.scoreA === "number" ? String(match.scoreA) : "";
   const scoreBVal = typeof match.scoreB === "number" ? String(match.scoreB) : b ? "" : "0";
+  const showConfirmBtn = inTableCard && isTableMode() && Boolean(match.tableId) && !state.tournamentEnded;
+  const confirmDisabled = !canConfirmMatch(match) ? "disabled" : "";
+  const confirmHtml = showConfirmBtn
+    ? `<button type="button" class="matchConfirmBtn" data-action="confirmMatch" data-round="${escapeAttr(round.id)}" data-match="${escapeAttr(match.id)}" title="${escapeAttr(t("confirmScoreTitle"))}" aria-label="${escapeAttr(t("confirmScoreTitle"))}" ${confirmDisabled}>✓</button>`
+    : `<div class="matchConfirmPlaceholder" aria-hidden="true"></div>`;
   const pairingDragEnabled = Boolean(options.pairingDragEnabled);
   const clsA = `matchTeam${pairingDragEnabled && match.teamAId ? " matchTeam--draggable" : ""}`;
   const clsB = `matchTeam${pairingDragEnabled && match.teamBId ? " matchTeam--draggable" : ""}`;
@@ -2401,8 +2470,10 @@ function renderMatchRowHtml(round, match, options = {}) {
     pairingDragEnabled && match.teamBId
       ? ` draggable="true" data-dnd-round="${escapeAttr(round.id)}" data-dnd-match="${escapeAttr(match.id)}" data-dnd-side="B" title="${escapeAttr(t("dragMatchupTitle"))}"`
       : "";
+  const rowCompleteClass = !inTableCard && isMatchComplete(match) ? " matchRow--complete" : "";
   return `
-    <div class="matchRow">
+    <div class="matchRow${rowCompleteClass}">
+      ${tableBadgeHtml}
       <div class="${clsA}"${dndA}>${escapeHtml(teamDisplayName(a))}</div>
       <input class="input scoreInput" inputmode="numeric" type="text" placeholder="0" autocomplete="off" ${scoreADisabled}
         value="${escapeAttr(scoreAVal)}"
@@ -2411,6 +2482,7 @@ function renderMatchRowHtml(round, match, options = {}) {
       <input class="input scoreInput" inputmode="numeric" type="text" placeholder="0" autocomplete="off" ${scoreBDisabled}
         value="${escapeAttr(scoreBVal)}"
         data-action="scoreB" data-round="${round.id}" data-match="${match.id}" />
+      ${confirmHtml}
     </div>
   `;
 }
@@ -2441,7 +2513,7 @@ function renderTables() {
           </div>
           ${
             inMatch
-              ? `<div class="matches">${renderMatchRowHtml(activeRound, match)}</div>`
+              ? `<div class="matches">${renderMatchRowHtml(activeRound, match, { inTableCard: true })}</div>`
               : `<div class="muted tableCard__empty">${escapeHtml(t("tableWaitingNext"))}</div>`
           }
         </div>
@@ -2494,7 +2566,7 @@ function renderRounds() {
         .map((m) =>
           renderMatchRowHtml(r, m, {
             pairingDragEnabled,
-            scoresLocked: isTableMode() || state.tournamentEnded,
+            scoresLocked: state.tournamentEnded,
           }),
         )
         .join("");

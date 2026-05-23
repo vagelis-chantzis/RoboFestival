@@ -784,13 +784,81 @@ select {
 
 .matchRow {
   display: grid;
-  grid-template-columns: 1fr 84px 1fr 84px;
+  grid-template-columns: 40px 1fr 84px 1fr 84px 44px;
   gap: 8px;
   align-items: center;
   padding: 10px;
   border: 1px solid var(--border);
   border-radius: var(--radiusSm);
   background: var(--surface-card-inner);
+  transition: border-color 120ms ease, background 120ms ease;
+}
+
+.matchRow--complete {
+  border-color: rgba(57, 217, 138, 0.55);
+  background: rgba(57, 217, 138, 0.10);
+}
+
+.matchRow--complete .scoreInput:disabled {
+  opacity: 0.85;
+  color: var(--text);
+}
+
+.matchConfirmBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid var(--accent-a45);
+  background: var(--accent-a14);
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  justify-self: end;
+}
+
+.matchConfirmBtn:hover:not(:disabled) {
+  background: var(--accent-a18);
+  border-color: var(--accent-a70);
+}
+
+.matchConfirmBtn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.matchConfirmBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.matchConfirmPlaceholder {
+  visibility: hidden;
+}
+
+.matchTable {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  padding: 4px 6px;
+  border: 1px solid var(--accent-a45);
+  border-radius: var(--radiusSm);
+  background: var(--accent-a12);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.matchTable--empty {
+  visibility: hidden;
+  border-color: transparent;
+  background: transparent;
 }
 
 .matchTeam {
@@ -955,7 +1023,7 @@ select {
   }
 
   .matchRow {
-    grid-template-columns: 1fr 74px;
+    grid-template-columns: 36px 1fr 74px 44px;
   }
 }
 
