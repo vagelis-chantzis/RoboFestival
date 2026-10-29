@@ -3,9 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Robofestival Tournament</title>
-    <link rel="icon" type="image/jpeg" href="./favicon.jpg" />
-    <link rel="apple-touch-icon" href="./favicon.jpg" />
+    <title>Robofestival</title>
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="apple-touch-icon" href="./favicon.svg" />
     <script>
       (function () {
         try {
@@ -24,16 +24,82 @@
         }
       })();
     </script>
-    <link rel="stylesheet" href="./styles.css?v=2026-05-22-channels" />
+    <link rel="stylesheet" href="./styles.css?v=2026-10-28-brand-mark" />
   </head>
   <body>
+    <div id="homeScreen" class="homeScreen">
+      <div class="homeScreen__bar">
+        <button class="btn btn--ghost" type="button" data-lang-toggle aria-label="Switch language">
+          EN / EL
+        </button>
+        <div class="themeToggle" title="Light or dark appearance">
+          <span class="themeToggle__label themeToggle__label--dark">Dark</span>
+          <button
+            class="themeToggle__switch"
+            type="button"
+            role="switch"
+            aria-checked="false"
+            aria-label="Theme: use switch to choose light or dark"
+          >
+            <span class="themeToggle__knob" aria-hidden="true"></span>
+          </button>
+          <span class="themeToggle__label themeToggle__label--light">Light</span>
+        </div>
+      </div>
+
+      <main class="homeScreen__main">
+        <div class="homeScreen__intro">
+          <h1 data-i18n="homeHeading">Choose an app</h1>
+          <p class="muted" data-i18n="homeLead">Open the tournament or Young Coders.</p>
+        </div>
+        <div class="homeGrid" data-i18n-aria="appsAria" aria-label="Apps">
+          <button
+            class="appCard"
+            type="button"
+            data-open-app="robofestival"
+            data-i18n-aria="openRobofestivalAria"
+            aria-label="Open Robofestival"
+          >
+            <span class="appCard__mark appCard__mark--favicon" aria-hidden="true">
+              <img class="appCard__favicon" alt="" src="./favicon.jpg" />
+            </span>
+            <span class="appCard__title" data-i18n="appHeaderTitle">Robofestival</span>
+            <span class="appCard__text" data-i18n="appSubtitle">Teams • Levels • Leaderboard</span>
+            <span class="appCard__open" data-i18n="openApp">Open</span>
+          </button>
+          <button
+            class="appCard appCard--coders"
+            type="button"
+            data-open-app="young-coders"
+            data-i18n-aria="openYoungCodersAria"
+            aria-label="Open Young Coders"
+          >
+            <span class="appCard__mark" aria-hidden="true">
+              <img
+                class="appCard__logo"
+                alt=""
+                src="./Young_Coders_LOGO/young%20coders_logo_svg_transp/%CE%9C%CE%BF%CE%BD%CE%BF%CC%81%CF%87%CF%81%CF%89%CE%BC%CE%BF%20%C2%B7%20%CE%BA%CE%B9%CC%81%CF%84%CF%81%CE%B9%CE%BD%CE%BF%20%CF%83%CE%B5%20%CE%BC%CE%B1%CF%85%CC%81%CF%81%CE%BF.svg"
+              />
+            </span>
+            <span class="appCard__title" data-i18n="youngCodersTitle">Young Coders</span>
+            <span class="appCard__text" data-i18n="tabRoster">Participants + teams</span>
+            <span class="appCard__open" data-i18n="openApp">Open</span>
+          </button>
+        </div>
+      </main>
+    </div>
+
+    <div id="appRobofestival" class="appShell" hidden>
     <header class="appHeader">
-      <div class="appHeader__title">
-        <h1>Robofestival Tournament</h1>
-        <p class="muted">Teams • Levels • Leaderboard</p>
+      <div class="appHeader__title appHeader__title--lockup">
+        <img class="brandMark" alt="" src="./favicon.jpg" />
+        <h1>Robofestival</h1>
       </div>
       <div class="appHeader__actions row row--gap">
-        <button id="langToggleBtn" class="btn btn--ghost" type="button" aria-label="Switch language">
+        <button id="roboHomeBtn" class="btn btn--ghost" type="button" data-home-btn data-i18n="home">
+          Home
+        </button>
+        <button id="langToggleBtn" class="btn btn--ghost" type="button" data-lang-toggle aria-label="Switch language">
           EN / EL
         </button>
         <div class="themeToggle" title="Light or dark appearance">
@@ -59,10 +125,10 @@
         >
           Export Excel
         </button>
-        <button id="exportBackupBtn" class="btn btn--ghost" type="button">Export Backup</button>
-        <button id="importBackupBtn" class="btn btn--ghost" type="button">Import Backup</button>
-        <input id="importBackupInput" type="file" accept="application/json,.json" hidden />
-        <button id="resetBtn" class="btn btn--danger" type="button">Reset tournament</button>
+        <button id="exportBackupBtn" class="btn btn--ghost" type="button" data-export-backup data-i18n="exportBackup">Export Backup</button>
+        <button id="importBackupBtn" class="btn btn--ghost" type="button" data-import-backup data-i18n="importBackup">Import Backup</button>
+        <input id="importBackupInput" class="importBackupInput" type="file" accept="application/json,.json" data-import-backup-input hidden />
+        <button id="resetBtn" class="btn btn--danger" type="button" data-reset-app data-i18n="resetTournament">Reset tournament</button>
       </div>
     </header>
 
@@ -79,6 +145,7 @@
         </button>
       </nav>
 
+      <div id="rosterSlot">
       <div id="panel-roster" class="tabPanel tabPanel--roster" role="tabpanel" aria-labelledby="tab-roster">
         <section class="card card--collapsible" id="card-participants">
           <div class="card__header">
@@ -150,6 +217,7 @@
           </div>
         </section>
       </div>
+      </div>
 
       <div id="panel-levels" class="tabPanel" role="tabpanel" aria-labelledby="tab-levels" hidden>
         <section class="card" aria-labelledby="levelsTitle">
@@ -196,13 +264,78 @@
     <footer class="footer muted">
       <small>Saved locally in this browser (localStorage).</small>
     </footer>
+    </div>
+
+    <div id="appYoungCoders" class="appShell" hidden>
+      <header class="appHeader">
+        <div class="appHeader__title">
+          <img
+            class="brandLogo brandLogo--light"
+            alt=""
+            src="./Young_Coders_LOGO/young%20coders_logo_svg_transp/1.svg"
+          />
+          <img
+            class="brandLogo brandLogo--dark"
+            alt=""
+            src="./Young_Coders_LOGO/young%20coders_logo_svg_transp/3.svg"
+          />
+          <h1 class="sr-only" data-i18n="youngCodersTitle">Young Coders</h1>
+          <p class="muted" data-i18n="tabRoster">Participants + teams</p>
+        </div>
+        <div class="appHeader__actions row row--gap">
+          <button class="btn btn--ghost" type="button" data-home-btn data-i18n="home">Home</button>
+          <button class="btn btn--ghost" type="button" data-lang-toggle aria-label="Switch language">
+            EN / EL
+          </button>
+          <div class="themeToggle" title="Light or dark appearance">
+            <span class="themeToggle__label themeToggle__label--dark">Dark</span>
+            <button
+              class="themeToggle__switch"
+              type="button"
+              role="switch"
+              aria-checked="false"
+              aria-label="Theme: use switch to choose light or dark"
+            >
+              <span class="themeToggle__knob" aria-hidden="true"></span>
+            </button>
+            <span class="themeToggle__label themeToggle__label--light">Light</span>
+          </div>
+          <button class="btn btn--ghost" type="button" data-export-excel data-i18n="exportExcel" disabled>
+            Export Excel
+          </button>
+          <button class="btn btn--ghost" type="button" data-export-backup data-i18n="exportBackup">Export Backup</button>
+          <button class="btn btn--ghost" type="button" data-import-backup data-i18n="importBackup">Import Backup</button>
+          <input class="importBackupInput" type="file" accept="application/json,.json" data-import-backup-input hidden />
+          <button class="btn btn--danger" type="button" data-reset-app data-i18n="resetYoungCoders">Reset</button>
+        </div>
+      </header>
+      <main class="container" id="youngCodersMain"></main>
+      <footer class="footer muted">
+        <small>Saved locally in this browser (localStorage).</small>
+      </footer>
+    </div>
 
     <button type="button" id="backToTopBtn" class="backToTop" aria-label="Back to top" title="Back to top" hidden>
       Top
     </button>
 
+    <script>
+      (function () {
+        try {
+          var view = sessionStorage.getItem("activeAppView");
+          if (view !== "robofestival" && view !== "young-coders") return;
+          var home = document.getElementById("homeScreen");
+          var robo = document.getElementById("appRobofestival");
+          var young = document.getElementById("appYoungCoders");
+          if (home) home.hidden = true;
+          if (robo) robo.hidden = view !== "robofestival";
+          if (young) young.hidden = view !== "young-coders";
+          if (view === "young-coders") document.documentElement.setAttribute("data-app", "young-coders");
+        } catch (e) {}
+      })();
+    </script>
     <script defer src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-    <script defer src="./storage.js?v=2026-05-22-channels"></script>
-    <script defer src="./app.js?v=2026-05-22-channels"></script>
+    <script defer src="./storage.js?v=2026-10-28-young-roster"></script>
+    <script defer src="./app.js?v=2026-10-28-brand-mark"></script>
   </body>
 </html>

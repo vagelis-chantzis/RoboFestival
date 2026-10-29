@@ -183,7 +183,8 @@ h3 {
 }
 
 .appHeader {
-  padding: 18px;
+  min-height: 118px;
+  padding: 14px 18px;
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
@@ -195,6 +196,7 @@ h3 {
   position: sticky;
   top: 0;
   z-index: 10;
+  box-sizing: border-box;
 }
 
 .appHeader__actions {
@@ -267,13 +269,39 @@ h3 {
   border-color: var(--accent-a40);
 }
 
+.appHeader__title {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 90px;
+  min-height: 90px;
+}
+
+.appHeader__title--lockup {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
+
+.brandMark {
+  display: block;
+  flex: 0 0 auto;
+  width: 68px;
+  height: 68px;
+  border-radius: 16px;
+  object-fit: cover;
+  background: #d7d7d7;
+}
+
 .appHeader__title h1 {
   font-size: 20px;
+  line-height: 1.2;
 }
 
 .appHeader__title p {
-  margin: 4px 0 0 0;
+  margin: 2px 0 0 0;
   font-size: 13px;
+  line-height: 1.2;
 }
 
 .card {
@@ -1109,6 +1137,240 @@ select {
 
 .channelsManager[hidden] {
   display: none !important;
+}
+
+.homeScreen[hidden],
+.appShell[hidden] {
+  display: none !important;
+}
+
+.homeScreen {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.homeScreen__bar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  padding: 18px clamp(14px, 3vw, 28px);
+}
+
+.homeScreen__main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  padding: 12px clamp(14px, 3vw, 28px) 56px;
+  text-align: center;
+}
+
+.homeScreen__intro h1 {
+  font-size: clamp(28px, 5vw, 42px);
+  letter-spacing: -0.03em;
+}
+
+.homeScreen__intro p {
+  margin: 8px 0 0;
+  font-size: 15px;
+}
+
+.homeGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 280px));
+  gap: 16px;
+  width: min(600px, 100%);
+}
+
+.appCard {
+  appearance: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 210px;
+  padding: 22px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--panel), var(--panel2));
+  box-shadow: var(--shadow);
+}
+
+.appCard:hover {
+  border-color: var(--accent-a45);
+}
+
+.appCard:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.appCard--coders:hover {
+  border-color: #2347ff;
+}
+
+.appCard--coders:focus-visible {
+  outline-color: #2347ff;
+}
+
+.appCard__mark {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+  color: var(--accent);
+  background: var(--accent-a12);
+  border: 1px solid var(--accent-a18);
+  overflow: hidden;
+}
+
+.appCard__mark--favicon {
+  padding: 0;
+  background: #d7d7d7;
+  border-color: transparent;
+}
+
+.appCard__favicon {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.appCard--coders .appCard__mark {
+  width: 64px;
+  height: 64px;
+  padding: 6px;
+  color: #fcd502;
+  background: #2347ff;
+  border-color: #2347ff;
+}
+
+.appCard__logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-view-box: inset(26% 26% 26% 26%);
+}
+
+:root[data-theme="dark"] .appCard--coders .appCard__open {
+  color: #fcd502;
+}
+
+.appCard__title {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.appCard__text {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.appCard__open {
+  margin-top: auto;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.appCard--coders .appCard__open {
+  color: #2347ff;
+}
+
+@media (max-width: 640px) {
+  .homeGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.brandLogo {
+  display: block;
+  flex: 0 0 auto;
+  width: 210px;
+  height: 68px;
+  object-fit: contain;
+  object-position: left center;
+  object-view-box: inset(26% 12% 38% 16%);
+}
+
+.brandLogo--dark {
+  display: none;
+}
+
+html[data-theme="dark"] .brandLogo--light {
+  display: none;
+}
+
+html[data-theme="dark"] .brandLogo--dark {
+  display: block;
+}
+
+html[data-app="young-coders"] {
+  --accent: #2347ff;
+  --yc-yellow: #fcd502;
+  --bg: #0c1022;
+  --panel: #161b33;
+  --panel2: #101528;
+  --chrome-bg: rgba(12, 16, 34, 0.9);
+  --tabs-bg: rgba(35, 71, 255, 0.12);
+  --accent-a10: rgba(35, 71, 255, 0.12);
+  --accent-a12: rgba(35, 71, 255, 0.16);
+  --accent-a14: rgba(35, 71, 255, 0.2);
+  --accent-a18: rgba(35, 71, 255, 0.24);
+  --accent-a35: rgba(35, 71, 255, 0.4);
+  --accent-a40: rgba(35, 71, 255, 0.48);
+  --accent-a45: rgba(35, 71, 255, 0.55);
+  --accent-a70: rgba(35, 71, 255, 0.75);
+  --accent-ring: rgba(35, 71, 255, 0.28);
+  --glow-a: rgba(252, 213, 2, 0.16);
+  --glow-b: rgba(35, 71, 255, 0.32);
+}
+
+html[data-app="young-coders"][data-theme="light"] {
+  --bg: #f4f6ff;
+  --panel: #ffffff;
+  --panel2: #f7f8ff;
+  --text: #141820;
+  --muted: #4c5670;
+  --border: rgba(35, 71, 255, 0.16);
+  --border-strong: rgba(35, 71, 255, 0.28);
+  --chrome-bg: rgba(255, 255, 255, 0.88);
+  --tabs-bg: rgba(35, 71, 255, 0.08);
+  --surface-pill: rgba(35, 71, 255, 0.05);
+  --surface-control: rgba(35, 71, 255, 0.06);
+  --surface-card-inner: rgba(35, 71, 255, 0.05);
+  --glow-a: rgba(252, 213, 2, 0.42);
+  --glow-b: rgba(35, 71, 255, 0.16);
+}
+
+html[data-app="young-coders"] .appHeader {
+  border-bottom-color: rgba(252, 213, 2, 0.55);
+}
+
+html[data-app="young-coders"] .btn:not(.btn--ghost):not(.btn--danger) {
+  background: #fcd502;
+  color: #141820;
+  border-color: #e3be00;
+}
+
+html[data-app="young-coders"] .btn:not(.btn--ghost):not(.btn--danger):hover {
+  border-color: #2347ff;
+}
+
+html[data-app="young-coders"] .btn--ghost:hover {
+  border-color: rgba(252, 213, 2, 0.7);
 }
 
 .channelsManager__head {

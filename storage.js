@@ -25,4 +25,26 @@
       localStorage.removeItem(STORAGE_KEY_V2);
     },
   };
+
+  const YOUNG_CODERS_KEY = "youngCoders.v1";
+
+  window.YoungCodersStorage = {
+    loadState() {
+      try {
+        const raw = localStorage.getItem(YOUNG_CODERS_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== "object") return null;
+        return parsed;
+      } catch {
+        return null;
+      }
+    },
+    saveState(state) {
+      localStorage.setItem(YOUNG_CODERS_KEY, JSON.stringify(state));
+    },
+    clearState() {
+      localStorage.removeItem(YOUNG_CODERS_KEY);
+    },
+  };
 })();

@@ -24,7 +24,10 @@ const I18N = {
     exportBackup: "Export Backup",
     importBackup: "Import Backup",
     exportDisabledTitle: "Enable after you end the tournament",
+    appHeaderTitle: "Robofestival",
     resetTournament: "Reset tournament",
+    resetYoungCoders: "Reset",
+    resetYoungCodersConfirm: "Reset Young Coders? This clears its saved data in this browser.",
     tabsAria: "Tournament views",
     tabRoster: "Participants + teams",
     tabLevels: "Levels + scoring",
@@ -166,8 +169,10 @@ const I18N = {
     exportEnabledTitle: "Download .xlsx with participants, teams, scores, leaderboard",
     exportNeedEndTitle: "End the tournament to enable export",
     backupOverwriteConfirm: "Import backup and overwrite current tournament data?",
+    backupOverwriteConfirmYoung: "Import backup and overwrite current Young Coders data?",
     backupImportSuccess: "Backup imported successfully.",
     backupImportInvalid: "This file is not a valid Robofestival backup.",
+    backupImportInvalidYoung: "This file is not a valid Young Coders backup.",
     backupImportParseError: "Could not read backup file. Please select a valid JSON backup.",
     backupImportNoFile: "Please select a backup file first.",
     channelsManagerTitle: "Registration channels",
@@ -186,6 +191,16 @@ const I18N = {
     headerNoShow: "No-show",
     cycleChannelHint: "click to change",
     cycleChannelAria: "Change registration channel",
+    homePageTitle: "Robofestival",
+    homeHeading: "Choose an app",
+    homeLead: "Open the tournament or Young Coders.",
+    appsAria: "Apps",
+    openApp: "Open",
+    openRobofestivalAria: "Open Robofestival",
+    openYoungCodersAria: "Open Young Coders",
+    home: "Home",
+    backHome: "Back to home",
+    youngCodersTitle: "Young Coders",
   },
   el: {
     pageTitle: "Τουρνουά Robofestival",
@@ -199,7 +214,10 @@ const I18N = {
     exportBackup: "Εξαγωγή αντιγράφου",
     importBackup: "Εισαγωγή αντιγράφου",
     exportDisabledTitle: "Ενεργοποιείται αφού ολοκληρώσετε το τουρνουά",
+    appHeaderTitle: "Robofestival",
     resetTournament: "Επαναφορά τουρνουά",
+    resetYoungCoders: "Επαναφορά",
+    resetYoungCodersConfirm: "Επαναφορά Young Coders; Αυτό θα διαγράψει τα αποθηκευμένα δεδομένα του σε αυτόν τον browser.",
     tabsAria: "Προβολές τουρνουά",
     tabRoster: "Συμμετέχοντες + ομάδες",
     tabLevels: "Επίπεδα + βαθμολογία",
@@ -342,8 +360,10 @@ const I18N = {
     exportEnabledTitle: "Λήψη .xlsx με συμμετέχοντες, ομάδες, σκορ, κατάταξη",
     exportNeedEndTitle: "Ολοκληρώστε το τουρνουά για να ενεργοποιηθεί η εξαγωγή",
     backupOverwriteConfirm: "Να εισαχθεί το αντίγραφο και να αντικατασταθούν τα τρέχοντα δεδομένα του τουρνουά;",
+    backupOverwriteConfirmYoung: "Να εισαχθεί το αντίγραφο και να αντικατασταθούν τα τρέχοντα δεδομένα του Young Coders;",
     backupImportSuccess: "Το αντίγραφο εισήχθη επιτυχώς.",
     backupImportInvalid: "Αυτό το αρχείο δεν είναι έγκυρο αντίγραφο Robofestival.",
+    backupImportInvalidYoung: "Αυτό το αρχείο δεν είναι έγκυρο αντίγραφο Young Coders.",
     backupImportParseError: "Δεν ήταν δυνατή η ανάγνωση του αρχείου αντιγράφου. Επιλέξτε ένα έγκυρο JSON αντίγραφο.",
     backupImportNoFile: "Παρακαλώ επιλέξτε πρώτα αρχείο αντιγράφου.",
     channelsManagerTitle: "Κανάλια εγγραφής",
@@ -362,6 +382,16 @@ const I18N = {
     headerNoShow: "Απουσία",
     cycleChannelHint: "κλικ για αλλαγή",
     cycleChannelAria: "Αλλαγή καναλιού εγγραφής",
+    homePageTitle: "Robofestival",
+    homeHeading: "Επιλέξτε εφαρμογή",
+    homeLead: "Ανοίξτε το τουρνουά ή το Young Coders.",
+    appsAria: "Εφαρμογές",
+    openApp: "Άνοιγμα",
+    openRobofestivalAria: "Άνοιγμα Robofestival",
+    openYoungCodersAria: "Άνοιγμα Young Coders",
+    home: "Αρχική",
+    backHome: "Επιστροφή στην αρχική",
+    youngCodersTitle: "Young Coders",
   },
 };
 
@@ -518,18 +548,39 @@ function migrateLoadedState(loaded) {
   };
 }
 
-let state = migrateLoadedState(loadState());
+function adoptLoadedState(loaded) {
+  const next = migrateLoadedState(loaded);
+  if (next.rounds.length > 0) next.membershipLocked = true;
+  return next;
+}
+
+const stores = {
+  robofestival: { state: adoptLoadedState(loadState()) },
+  youngCoders: { state: adoptLoadedState(window.YoungCodersStorage.loadState()) },
+};
+let activeStoreId = "robofestival";
+let state = stores.robofestival.state;
 let draggedMember = null;
 /** { roundId, matchId, side } while dragging a matchup slot (levels 2+). */
 let draggedMatchupSlot = null;
-const collapsedTeamIds = new Set();
-if (state.rounds.length > 0) {
-  state.membershipLocked = true;
-}
+const collapsedByStore = {
+  robofestival: new Set(),
+  youngCoders: new Set(),
+};
+let collapsedTeamIds = collapsedByStore.robofestival;
 reconcileTablesForActiveRound();
 
+function replaceActiveState(next) {
+  state = next;
+  stores[activeStoreId].state = next;
+}
+
+function activeStorage() {
+  return activeStoreId === "youngCoders" ? window.YoungCodersStorage : window.TournamentStorage;
+}
+
 function persist() {
-  saveState(state);
+  activeStorage().saveState(state);
 }
 
 function hasRounds() {
@@ -851,9 +902,13 @@ function canExportTournamentData() {
 const BACKUP_APP_ID = "robofestival-tournament";
 const BACKUP_SCHEMA_VERSION = 1;
 
+function backupAppId() {
+  return activeStoreId === "youngCoders" ? "young-coders" : BACKUP_APP_ID;
+}
+
 function buildBackupPayload() {
   return {
-    app: BACKUP_APP_ID,
+    app: backupAppId(),
     version: BACKUP_SCHEMA_VERSION,
     exportedAt: new Date().toISOString(),
     state,
@@ -877,12 +932,13 @@ function exportTournamentBackup() {
   const text = `${JSON.stringify(payload, null, 2)}\n`;
   const d = new Date();
   const stamp = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  downloadTextFile(`robofestival-backup-${stamp}.json`, text, "application/json");
+  const prefix = activeStoreId === "youngCoders" ? "young-coders-backup" : "robofestival-backup";
+  downloadTextFile(`${prefix}-${stamp}.json`, text, "application/json");
 }
 
 function isValidBackupPayload(raw) {
   if (!raw || typeof raw !== "object") return false;
-  if (raw.app !== BACKUP_APP_ID) return false;
+  if (raw.app !== backupAppId()) return false;
   if (!("state" in raw) || typeof raw.state !== "object" || raw.state === null) return false;
   const s = raw.state;
   return Array.isArray(s.participants) && Array.isArray(s.teams) && Array.isArray(s.rounds);
@@ -898,12 +954,14 @@ function importTournamentBackupFile(file) {
     try {
       const raw = JSON.parse(String(reader.result ?? ""));
       if (!isValidBackupPayload(raw)) {
-        window.alert(t("backupImportInvalid"));
+        window.alert(t(activeStoreId === "youngCoders" ? "backupImportInvalidYoung" : "backupImportInvalid"));
         return;
       }
-      const ok = window.confirm(t("backupOverwriteConfirm"));
+      const ok = window.confirm(
+        t(activeStoreId === "youngCoders" ? "backupOverwriteConfirmYoung" : "backupOverwriteConfirm"),
+      );
       if (!ok) return;
-      state = migrateLoadedState(raw.state);
+      replaceActiveState(migrateLoadedState(raw.state));
       if (state.rounds.length > 0) {
         state.membershipLocked = true;
       }
@@ -914,16 +972,16 @@ function importTournamentBackupFile(file) {
     } catch {
       window.alert(t("backupImportParseError"));
     } finally {
-      if (els.importBackupInput) {
-        els.importBackupInput.value = "";
-      }
+      document.querySelectorAll("[data-import-backup-input]").forEach((input) => {
+        input.value = "";
+      });
     }
   };
   reader.onerror = () => {
     window.alert(t("backupImportParseError"));
-    if (els.importBackupInput) {
-      els.importBackupInput.value = "";
-    }
+    document.querySelectorAll("[data-import-backup-input]").forEach((input) => {
+      input.value = "";
+    });
   };
   reader.readAsText(file);
 }
@@ -933,7 +991,8 @@ function exportTournamentToExcel() {
     window.alert(t("excelLibMissing"));
     return;
   }
-  if (!state.tournamentEnded) {
+  const young = activeStoreId === "youngCoders";
+  if (!young && !state.tournamentEnded) {
     window.alert(t("endTournamentFirst"));
     return;
   }
@@ -996,7 +1055,8 @@ function exportTournamentToExcel() {
 
   const d = new Date();
   const stamp = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  XLSX.writeFile(wb, `tournament-export-${stamp}.xlsx`);
+  const prefix = young ? "young-coders-export" : "tournament-export";
+  XLSX.writeFile(wb, `${prefix}-${stamp}.xlsx`);
 }
 
 function isRoundComplete(round) {
@@ -1556,6 +1616,23 @@ function initTabs() {
 const COLLAPSE_PARTICIPANTS_KEY = "rosterCollapseParticipants";
 const COLLAPSE_TEAMS_KEY = "rosterCollapseTeams";
 
+function collapseStorageKey(sectionId) {
+  const base = sectionId === "card-participants" ? COLLAPSE_PARTICIPANTS_KEY : COLLAPSE_TEAMS_KEY;
+  return `${activeStoreId}:${base}`;
+}
+
+function readRosterCollapsed(sectionId) {
+  const base = sectionId === "card-participants" ? COLLAPSE_PARTICIPANTS_KEY : COLLAPSE_TEAMS_KEY;
+  try {
+    const scoped = sessionStorage.getItem(collapseStorageKey(sectionId));
+    if (scoped === "1" || scoped === "0") return scoped === "1";
+    if (activeStoreId === "robofestival") return sessionStorage.getItem(base) === "1";
+  } catch {
+    /* ignore */
+  }
+  return false;
+}
+
 function setRosterSectionCollapsed(sectionId, btnId, collapsed) {
   const section = document.getElementById(sectionId);
   const btn = document.getElementById(btnId);
@@ -1564,10 +1641,19 @@ function setRosterSectionCollapsed(sectionId, btnId, collapsed) {
   btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
   btn.textContent = collapsed ? t("expand") : t("collapse");
   try {
-    const key = sectionId === "card-participants" ? COLLAPSE_PARTICIPANTS_KEY : COLLAPSE_TEAMS_KEY;
-    sessionStorage.setItem(key, collapsed ? "1" : "0");
+    sessionStorage.setItem(collapseStorageKey(sectionId), collapsed ? "1" : "0");
   } catch {
     /* ignore */
+  }
+}
+
+function applyRosterCollapseFromSession() {
+  const pairs = [
+    { section: "card-participants", btn: "collapseParticipantsBtn" },
+    { section: "card-teams", btn: "collapseTeamsBtn" },
+  ];
+  for (const p of pairs) {
+    setRosterSectionCollapsed(p.section, p.btn, readRosterCollapsed(p.section));
   }
 }
 
@@ -1576,15 +1662,8 @@ function initCollapsibleRosterCards() {
     { section: "card-participants", btn: "collapseParticipantsBtn" },
     { section: "card-teams", btn: "collapseTeamsBtn" },
   ];
+  applyRosterCollapseFromSession();
   for (const p of pairs) {
-    const key = p.section === "card-participants" ? COLLAPSE_PARTICIPANTS_KEY : COLLAPSE_TEAMS_KEY;
-    let collapsed = false;
-    try {
-      collapsed = sessionStorage.getItem(key) === "1";
-    } catch {
-      /* ignore */
-    }
-    setRosterSectionCollapsed(p.section, p.btn, collapsed);
     document.getElementById(p.btn)?.addEventListener("click", () => {
       const sec = document.getElementById(p.section);
       if (!sec) return;
@@ -1613,14 +1692,11 @@ function initBackToTop() {
 const THEME_KEY = "tournamentTheme";
 
 function syncThemeToggleButton() {
-  const btn = document.getElementById("themeToggleBtn");
-  if (!btn) return;
   const light = document.documentElement.getAttribute("data-theme") === "light";
-  btn.setAttribute("aria-checked", light ? "true" : "false");
-  btn.setAttribute(
-    "aria-label",
-    light ? t("themeAriaLightOn") : t("themeAriaDarkOn"),
-  );
+  document.querySelectorAll(".themeToggle__switch").forEach((btn) => {
+    btn.setAttribute("aria-checked", light ? "true" : "false");
+    btn.setAttribute("aria-label", light ? t("themeAriaLightOn") : t("themeAriaDarkOn"));
+  });
 }
 
 function applyTheme(next) {
@@ -1637,34 +1713,48 @@ function applyTheme(next) {
 
 function initTheme() {
   syncThemeToggleButton();
-  document.getElementById("themeToggleBtn")?.addEventListener("click", () => {
-    const cur = document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
-    applyTheme(cur === "light" ? "dark" : "light");
+  document.querySelectorAll(".themeToggle__switch").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const cur = document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+      applyTheme(cur === "light" ? "dark" : "light");
+    });
   });
 }
 
 function syncLanguageToggleButton() {
-  const btn = document.getElementById("langToggleBtn");
-  if (!btn) return;
-  btn.textContent = t("langButton");
-  btn.setAttribute("aria-label", t("langAria"));
+  document.querySelectorAll("[data-lang-toggle]").forEach((btn) => {
+    btn.textContent = t("langButton");
+    btn.setAttribute("aria-label", t("langAria"));
+  });
 }
 
 function applyStaticTranslations() {
-  document.title = t("pageTitle");
   document.documentElement.lang = currentLanguage === "el" ? "el" : "en";
 
-  const appTitle = document.querySelector(".appHeader__title h1");
-  if (appTitle) appTitle.textContent = t("appTitle");
-  const appSubtitle = document.querySelector(".appHeader__title .muted");
-  if (appSubtitle) appSubtitle.textContent = t("appSubtitle");
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    const key = el.getAttribute("data-i18n");
+    if (key) el.textContent = t(key);
+  });
+  document.querySelectorAll("[data-i18n-aria]").forEach((el) => {
+    const key = el.getAttribute("data-i18n-aria");
+    if (key) el.setAttribute("aria-label", t(key));
+  });
+  document.querySelectorAll("[data-home-btn]").forEach((btn) => {
+    btn.setAttribute("aria-label", t("backHome"));
+  });
 
-  const themeWrap = document.querySelector(".themeToggle");
-  if (themeWrap) themeWrap.setAttribute("title", `${t("light")} / ${t("dark")}`);
-  const darkLabel = document.querySelector(".themeToggle__label--dark");
-  if (darkLabel) darkLabel.textContent = t("dark");
-  const lightLabel = document.querySelector(".themeToggle__label--light");
-  if (lightLabel) lightLabel.textContent = t("light");
+  const appTitle = document.querySelector("#appRobofestival .appHeader__title h1");
+  if (appTitle) appTitle.textContent = t("appHeaderTitle");
+
+  document.querySelectorAll(".themeToggle").forEach((themeWrap) => {
+    themeWrap.setAttribute("title", `${t("light")} / ${t("dark")}`);
+  });
+  document.querySelectorAll(".themeToggle__label--dark").forEach((darkLabel) => {
+    darkLabel.textContent = t("dark");
+  });
+  document.querySelectorAll(".themeToggle__label--light").forEach((lightLabel) => {
+    lightLabel.textContent = t("light");
+  });
 
   if (els.exportExcelBtn) els.exportExcelBtn.textContent = t("exportExcel");
   if (els.exportBackupBtn) els.exportBackupBtn.textContent = t("exportBackup");
@@ -1730,8 +1820,9 @@ function applyStaticTranslations() {
   const leaderboardHelp = document.querySelector("#panel-leaderboard .card__header .muted");
   if (leaderboardHelp) leaderboardHelp.textContent = t("leaderboardHelp");
 
-  const footer = document.querySelector("footer small");
-  if (footer) footer.textContent = t("savedLocally");
+  document.querySelectorAll("footer small").forEach((footer) => {
+    footer.textContent = t("savedLocally");
+  });
   const topBtn = document.getElementById("backToTopBtn");
   if (topBtn) {
     topBtn.textContent = t("top");
@@ -1741,6 +1832,7 @@ function applyStaticTranslations() {
 
   syncThemeToggleButton();
   syncLanguageToggleButton();
+  applyViewTitle();
 }
 
 function applyLanguage(nextLanguage) {
@@ -1755,11 +1847,154 @@ function applyLanguage(nextLanguage) {
 
 function initLanguage() {
   currentLanguage = loadLanguagePreference();
+  currentAppView = readSavedAppView();
   applyStaticTranslations();
-  document.getElementById("langToggleBtn")?.addEventListener("click", () => {
-    applyLanguage(currentLanguage === "en" ? "el" : "en");
-    render();
+  document.querySelectorAll("[data-lang-toggle]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      applyLanguage(currentLanguage === "en" ? "el" : "en");
+      render();
+    });
   });
+}
+
+const APP_VIEW_KEY = "activeAppView";
+let currentAppView = "home";
+
+function readSavedAppView() {
+  try {
+    const saved = sessionStorage.getItem(APP_VIEW_KEY);
+    if (saved === "robofestival" || saved === "young-coders" || saved === "home") return saved;
+  } catch {
+    /* ignore */
+  }
+  return "home";
+}
+
+function applyViewTitle() {
+  if (currentAppView === "robofestival") document.title = t("pageTitle");
+  else if (currentAppView === "young-coders") document.title = t("youngCodersTitle");
+  else document.title = t("homePageTitle");
+}
+
+const rosterDrafts = {
+  robofestival: null,
+  youngCoders: null,
+};
+let chromeReady = false;
+
+function readStoreFlag(storeId, base) {
+  try {
+    const scoped = sessionStorage.getItem(`${storeId}:${base}`);
+    if (scoped === "1" || scoped === "0") return scoped === "1";
+    if (storeId === "robofestival") return sessionStorage.getItem(base) === "1";
+  } catch {
+    /* ignore */
+  }
+  return false;
+}
+
+const channelsOpenByStore = {
+  robofestival: readStoreFlag("robofestival", "channelsManagerOpen"),
+  youngCoders: readStoreFlag("youngCoders", "channelsManagerOpen"),
+};
+
+function placeRoster(target) {
+  const panel = document.getElementById("panel-roster");
+  const slot = document.getElementById("rosterSlot");
+  const youngMain = document.getElementById("youngCodersMain");
+  if (!panel || !slot || !youngMain) return;
+  if (target === "young-coders") {
+    youngMain.appendChild(panel);
+    panel.removeAttribute("hidden");
+    return;
+  }
+  slot.appendChild(panel);
+  const rosterTabActive = document.getElementById("tab-roster")?.classList.contains("tab--active");
+  if (rosterTabActive) panel.removeAttribute("hidden");
+  else panel.setAttribute("hidden", "");
+}
+
+function stashRosterChrome() {
+  if (els.channelsManager) {
+    channelsOpenByStore[activeStoreId] = els.channelsManager.dataset.open === "1";
+  }
+  rosterDrafts[activeStoreId] = {
+    name: els.participantNameInput?.value ?? "",
+    bulk: els.bulkParticipantsInput?.value ?? "",
+    teamCount: els.teamCountInput?.value ?? String(state.lastTeamCount ?? 4),
+  };
+}
+
+function restoreRosterChrome() {
+  const open = Boolean(channelsOpenByStore[activeStoreId]);
+  if (els.channelsManager) els.channelsManager.dataset.open = open ? "1" : "0";
+  const draft = rosterDrafts[activeStoreId];
+  if (els.participantNameInput) els.participantNameInput.value = draft?.name ?? "";
+  if (els.bulkParticipantsInput) els.bulkParticipantsInput.value = draft?.bulk ?? "";
+  if (els.teamCountInput) els.teamCountInput.value = draft?.teamCount ?? String(state.lastTeamCount ?? 4);
+  applyRosterCollapseFromSession();
+}
+
+function activateStore(id) {
+  if (id !== activeStoreId) {
+    activeStoreId = id;
+    state = stores[id].state;
+    collapsedTeamIds = collapsedByStore[id];
+    draggedMember = null;
+    draggedMatchupSlot = null;
+  }
+  restoreRosterChrome();
+  render();
+}
+
+function showApp(view, options = {}) {
+  const next = view === "robofestival" || view === "young-coders" ? view : "home";
+  if (chromeReady && (currentAppView === "robofestival" || currentAppView === "young-coders")) {
+    stashRosterChrome();
+    persist();
+  }
+  currentAppView = next;
+  const home = document.getElementById("homeScreen");
+  const robo = document.getElementById("appRobofestival");
+  const young = document.getElementById("appYoungCoders");
+  if (home) home.hidden = currentAppView !== "home";
+  if (robo) robo.hidden = currentAppView !== "robofestival";
+  if (young) young.hidden = currentAppView !== "young-coders";
+  try {
+    sessionStorage.setItem(APP_VIEW_KEY, currentAppView);
+  } catch {
+    /* ignore */
+  }
+  if (currentAppView === "young-coders") {
+    document.documentElement.setAttribute("data-app", "young-coders");
+    placeRoster("young-coders");
+    activateStore("youngCoders");
+  } else if (currentAppView === "robofestival") {
+    document.documentElement.removeAttribute("data-app");
+    placeRoster("robofestival");
+    activateStore("robofestival");
+  } else {
+    document.documentElement.removeAttribute("data-app");
+  }
+  chromeReady = true;
+  applyViewTitle();
+  window.scrollTo(0, 0);
+  if (!options.focus) return;
+  const focusTarget =
+    currentAppView === "home"
+      ? document.querySelector("#homeScreen [data-open-app]")
+      : document.querySelector(`#${currentAppView === "robofestival" ? "appRobofestival" : "appYoungCoders"} [data-home-btn]`);
+  focusTarget?.focus();
+}
+
+function initLauncher() {
+  document.querySelectorAll("[data-open-app]").forEach((btn) => {
+    btn.addEventListener("click", () => showApp(btn.getAttribute("data-open-app"), { focus: true }));
+  });
+  document.querySelectorAll("[data-home-btn]").forEach((btn) => {
+    btn.addEventListener("click", () => showApp("home", { focus: true }));
+  });
+  showApp(readSavedAppView());
 }
 
 // DOM
@@ -1802,24 +2037,41 @@ const els = {
   importBackupInput: document.getElementById("importBackupInput"),
 };
 
-function wireEvents() {
-  els.resetBtn.addEventListener("click", () => {
-    const ok = window.confirm(t("resetConfirm"));
-    if (!ok) return;
-    clearState();
-    state = defaultState();
-    try {
+function resetActiveApp() {
+  const young = activeStoreId === "youngCoders";
+  const ok = window.confirm(t(young ? "resetYoungCodersConfirm" : "resetConfirm"));
+  if (!ok) return;
+  activeStorage().clearState();
+  replaceActiveState(defaultState());
+  collapsedByStore[activeStoreId].clear();
+  rosterDrafts[activeStoreId] = { name: "", bulk: "", teamCount: "4" };
+  channelsOpenByStore[activeStoreId] = false;
+  try {
+    if (!young) {
       sessionStorage.removeItem(ACTIVE_TAB_KEY);
       sessionStorage.removeItem(COLLAPSE_PARTICIPANTS_KEY);
       sessionStorage.removeItem(COLLAPSE_TEAMS_KEY);
-    } catch {
-      /* ignore */
     }
-    setActiveTab(0);
-    setRosterSectionCollapsed("card-participants", "collapseParticipantsBtn", false);
-    setRosterSectionCollapsed("card-teams", "collapseTeamsBtn", false);
-    persist();
-    render();
+    sessionStorage.removeItem(`${activeStoreId}:${COLLAPSE_PARTICIPANTS_KEY}`);
+    sessionStorage.removeItem(`${activeStoreId}:${COLLAPSE_TEAMS_KEY}`);
+    sessionStorage.removeItem(`${activeStoreId}:channelsManagerOpen`);
+  } catch {
+    /* ignore */
+  }
+  if (!young) setActiveTab(0);
+  if (els.channelsManager) els.channelsManager.dataset.open = "0";
+  if (els.participantNameInput) els.participantNameInput.value = "";
+  if (els.bulkParticipantsInput) els.bulkParticipantsInput.value = "";
+  if (els.teamCountInput) els.teamCountInput.value = "4";
+  setRosterSectionCollapsed("card-participants", "collapseParticipantsBtn", false);
+  setRosterSectionCollapsed("card-teams", "collapseTeamsBtn", false);
+  persist();
+  render();
+}
+
+function wireEvents() {
+  document.querySelectorAll("[data-reset-app]").forEach((btn) => {
+    btn.addEventListener("click", () => resetActiveApp());
   });
 
   els.addParticipantForm.addEventListener("submit", (e) => {
@@ -1903,15 +2155,21 @@ function wireEvents() {
   initBackToTop();
   initTheme();
   initLanguage();
+  initLauncher();
 
   els.exportExcelBtn?.addEventListener("click", () => exportTournamentToExcel());
-  els.exportBackupBtn?.addEventListener("click", () => exportTournamentBackup());
-  els.importBackupBtn?.addEventListener("click", () => {
-    els.importBackupInput?.click();
+  document.querySelectorAll("[data-export-excel]").forEach((btn) => {
+    btn.addEventListener("click", () => exportTournamentToExcel());
   });
-  els.importBackupInput?.addEventListener("change", () => {
-    const file = els.importBackupInput?.files?.[0] ?? null;
-    importTournamentBackupFile(file);
+  document.querySelectorAll("[data-export-backup]").forEach((btn) => {
+    btn.addEventListener("click", () => exportTournamentBackup());
+  });
+  document.querySelectorAll("[data-import-backup]").forEach((btn) => {
+    const input = btn.parentElement?.querySelector("[data-import-backup-input]");
+    btn.addEventListener("click", () => input?.click());
+    input?.addEventListener("change", () => {
+      importTournamentBackupFile(input.files?.[0] ?? null);
+    });
   });
 
 }
@@ -1933,8 +2191,9 @@ function setChannelsManagerOpen(open) {
   if (!els.channelsManager) els.channelsManager = document.getElementById("channelsManager");
   if (!els.channelsManager) return;
   els.channelsManager.dataset.open = open ? "1" : "0";
+  channelsOpenByStore[activeStoreId] = open;
   try {
-    sessionStorage.setItem(CHANNELS_MANAGER_OPEN_KEY, open ? "1" : "0");
+    sessionStorage.setItem(`${activeStoreId}:${CHANNELS_MANAGER_OPEN_KEY}`, open ? "1" : "0");
   } catch {
     /* ignore */
   }
@@ -2723,6 +2982,13 @@ function renderControlsOnly() {
     els.exportExcelBtn.title = state.tournamentEnded
       ? t("exportEnabledTitle")
       : t("exportNeedEndTitle");
+  }
+  if (activeStoreId === "youngCoders") {
+    const canExport = canExportTournamentData();
+    document.querySelectorAll("[data-export-excel]").forEach((btn) => {
+      btn.disabled = !canExport;
+      btn.title = canExport ? t("exportEnabledTitle") : t("nothingToExport");
+    });
   }
 }
 
